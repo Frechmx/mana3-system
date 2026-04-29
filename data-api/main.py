@@ -26,11 +26,11 @@ NOTION_HEADERS = {
 
 # Strava configuration
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "232301")
-STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "")
+STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "e7d83eaa03e70ddf84c5d8d48c47835d50318451")
 STRAVA_VERIFY_TOKEN = os.environ.get("STRAVA_VERIFY_TOKEN", "MANA3_STRAVA_VERIFY")
 
 # Make.com S12 webhook URL (replace with actual URL after creating S12 scenario)
-MAKE_S12_WEBHOOK_URL = os.environ.get("MAKE_S12_WEBHOOK_URL", "https://hook.eu1.make.com/PLACEHOLDER_S12_WEBHOOK")
+MAKE_S12_WEBHOOK_URL = os.environ.get("MAKE_S12_WEBHOOK_URL", "https://hook.eu1.make.com/owdmk6eh8tnfnb1fdpj11t5yowvgfam6")
 
 # Client ID to Notion page ID mapping (hardcoded for beta)
 CLIENT_MAP = {
