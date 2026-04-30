@@ -1,0 +1,375 @@
+"""
+MANA³ Strava Processor
+Cloud Run Function (europe-west1)
+
+Receives raw Strava activity detail + streams + zones from S13.
+Returns normalized metrics mapped to MANA³ 12-field system,
+plus pre-built Notion payloads for Daily Record create/update.
+"""
+
+import json
+import os
+import numpy as np
+from datetime import datetime
+
+# Notion config
+DAILY_RECORDS_DB = "3691383d-69a0-450c-b8a1-804a80c367e2"
+
+# Client ID to Notion page ID mapping (same as data-api)
+CLIENT_MAP = {
+    "MANA-TEST": "324b5258-2f9c-8045-b971-e08677181692"
+}
+
+# Sport type → activity category mapping
+SPORT_CATEGORY_MAP = {
+    "Run": "ENDURANCE", "Trail Run": "ENDURANCE", "VirtualRun": "ENDURANCE",
+    "Ride": "ENDURANCE", "VirtualRide": "ENDURANCE", "GravelRide": "ENDURANCE",
+    "MountainBikeRide": "ENDURANCE", "EBikeRide": "ENDURANCE",
+    "Swim": "ENDURANCE", "Walk": "ENDURANCE", "Hike": "ENDURANCE",
+    "NordicSki": "ENDURANCE", "BackcountrySki": "ENDURANCE",
+    "AlpineSki": "SPORT", "Snowboard": "SPORT", "RockClimbing": "SPORT",
+    "IceSkate": "SPORT", "InlineSkate": "SPORT", "Skateboard": "SPORT",
+    "Surf": "SPORT", "Windsurf": "SPORT", "Kitesurf": "SPORT",
+    "Rowing": "ENDURANCE", "Kayaking": "ENDURANCE", "Canoeing": "ENDURANCE",
+    "StandUpPaddling": "ENDURANCE", "Sail": "SPORT",
+    "WeightTraining": "STRENGTH", "Crossfit": "HIIT",
+    "Yoga": "FLEXIBILITY", "Pilates": "FLEXIBILITY",
+    "Elliptical": "ENDURANCE", "StairStepper": "ENDURANCE",
+    "Workout": "STRENGTH", "HIIT": "HIIT",
+    "Tennis": "SPORT", "Pickleball": "SPORT", "Badminton": "SPORT",
+    "TableTennis": "SPORT", "Squash": "SPORT", "Racquetball": "SPORT",
+    "Soccer": "SPORT", "Football": "SPORT", "Rugby": "SPORT",
+    "Golf": "SPORT", "Handstand": "FLEXIBILITY",
+    "MartialArts": "SPORT", "Boxing": "HIIT",
+}
+
+
+def process_streams(streams, activity):
+    """Process raw Strava streams into derived metrics."""
+    result = {}
+
+    # Extract stream arrays
+    hr = streams.get("heartrate", {}).get("data", []) if isinstance(streams.get("heartrate"), dict) else []
+    time_arr = streams.get("time", {}).get("data", []) if isinstance(streams.get("time"), dict) else []
+    cadence = streams.get("cadence", {}).get("data", []) if isinstance(streams.get("cadence"), dict) else []
+    watts = streams.get("watts", {}).get("data", []) if isinstance(streams.get("watts"), dict) else []
+    velocity = streams.get("velocity_smooth", {}).get("data", []) if isinstance(streams.get("velocity_smooth"), dict) else []
+    grade = streams.get("grade_smooth", {}).get("data", []) if isinstance(streams.get("grade_smooth"), dict) else []
+    altitude = streams.get("altitude", {}).get("data", []) if isinstance(streams.get("altitude"), dict) else []
+
+    # ── Heart rate metrics ──
+    if hr and len(hr) > 60:
+        hr_arr = np.array(hr, dtype=float)
+        result["hr_mean"] = round(float(np.mean(hr_arr)), 1)
+        result["hr_std"] = round(float(np.std(hr_arr)), 1)
+
+        # HR drift: compare first 25% avg to last 25% avg
+        q1 = hr_arr[:len(hr_arr) // 4]
+        q4 = hr_arr[3 * len(hr_arr) // 4:]
+        if len(q1) > 0 and np.mean(q1) > 0:
+            result["hr_drift_pct"] = round(
+                (float(np.mean(q4)) / float(np.mean(q1)) - 1) * 100, 1
+            )
+
+        # HR recovery: find peak, measure drop at 30s and 60s
+        if time_arr and len(time_arr) == len(hr):
+            peak_idx = int(np.argmax(hr_arr))
+            peak_hr = float(hr_arr[peak_idx])
+            peak_time = time_arr[peak_idx]
+
+            for label, offset in [("hr_recovery_30s", 30), ("hr_recovery_60s", 60)]:
+                target_time = peak_time + offset
+                # Find closest time point after peak
+                candidates = [
+                    (i, abs(time_arr[i] - target_time))
+                    for i in range(peak_idx + 1, len(time_arr))
+                    if abs(time_arr[i] - target_time) <= 5
+                ]
+                if candidates:
+                    best_idx = min(candidates, key=lambda x: x[1])[0]
+                    result[label] = round(float(hr_arr[best_idx]) - peak_hr, 1)
+
+    # ── Cadence metrics ──
+    if cadence and len(cadence) > 10:
+        c_arr = np.array([c for c in cadence if c > 0], dtype=float)
+        if len(c_arr) > 10:
+            result["cadence_mean"] = round(float(np.mean(c_arr)), 1)
+            mean_c = float(np.mean(c_arr))
+            if mean_c > 0:
+                result["cadence_cv"] = round(float(np.std(c_arr)) / mean_c, 4)
+
+    # ── Power metrics ──
+    if watts and len(watts) > 60:
+        w_arr = np.array(watts, dtype=float)
+        result["power_mean"] = round(float(np.mean(w_arr)), 1)
+        result["power_std"] = round(float(np.std(w_arr)), 1)
+
+        # Power-HR decoupling
+        if hr and len(hr) >= len(watts):
+            hr_subset = np.array(hr[:len(watts)], dtype=float)
+            mid = len(w_arr) // 2
+            hr_first = float(np.mean(hr_subset[:mid]))
+            hr_second = float(np.mean(hr_subset[mid:]))
+            w_first = float(np.mean(w_arr[:mid]))
+            w_second = float(np.mean(w_arr[mid:]))
+
+            if hr_first > 0 and hr_second > 0:
+                ratio_first = w_first / hr_first
+                ratio_second = w_second / hr_second
+                if ratio_first > 0:
+                    result["power_hr_decoupling"] = round(
+                        (ratio_second / ratio_first - 1) * 100, 1
+                    )
+
+    # ── Grade-adjusted pace & vertical efficiency ──
+    if velocity and grade and len(velocity) > 10:
+        v_arr = np.array(velocity, dtype=float)
+        g_arr = np.array(grade[:len(velocity)], dtype=float)
+
+        # Filter out zero-velocity points (standing still)
+        mask = v_arr > 0.5
+        if np.sum(mask) > 10:
+            v_filtered = v_arr[mask]
+            g_filtered = g_arr[mask]
+            # Grade-adjusted pace: cost factor ~3.3% per 1% grade
+            gap = v_filtered * (1 + g_filtered / 100 * 0.033)
+            result["grade_adjusted_pace"] = round(float(np.mean(gap)), 3)
+
+    # Vertical efficiency: elevation gain / moving time
+    moving_time = activity.get("moving_time", 0)
+    elev_gain = activity.get("total_elevation_gain", 0)
+    if moving_time > 0 and elev_gain > 0:
+        result["vertical_efficiency"] = round(elev_gain / moving_time, 4)
+
+    return result
+
+
+def process_splits(activity):
+    """Extract split/lap metrics from activity."""
+    splits = activity.get("splits_metric", [])
+    if not splits or len(splits) < 2:
+        return {}
+
+    # Extract pace per km (moving_time / distance for each split)
+    paces = []
+    for s in splits:
+        dist = s.get("distance", 0)
+        time_s = s.get("moving_time", 0)
+        if dist > 500 and time_s > 0:  # Only count splits > 500m
+            paces.append(time_s / (dist / 1000))  # seconds per km
+
+    if len(paces) < 2:
+        return {}
+
+    pace_arr = np.array(paces, dtype=float)
+    mean_pace = float(np.mean(pace_arr))
+
+    result = {
+        "split_count": len(paces),
+        "fastest_km_seconds": round(float(np.min(pace_arr))),
+        "slowest_km_seconds": round(float(np.max(pace_arr))),
+    }
+
+    if mean_pace > 0:
+        cv = float(np.std(pace_arr)) / mean_pace
+        result["pace_consistency"] = round(1 - cv, 4)
+        result["pace_cv_per_km"] = round(cv, 4)
+
+    # Negative split: second half faster than first half
+    mid = len(paces) // 2
+    first_half = float(np.mean(pace_arr[:mid]))
+    second_half = float(np.mean(pace_arr[mid:]))
+    result["negative_split"] = second_half < first_half
+
+    return result
+
+
+def process_zones(zones):
+    """Extract HR and power zone distributions."""
+    result = {}
+
+    if not zones:
+        return result
+
+    for zone_set in zones:
+        zone_type = zone_set.get("type")
+        buckets = zone_set.get("distribution_buckets", [])
+
+        if zone_type == "heartrate" and buckets:
+            total_time = sum(b.get("time", 0) for b in buckets)
+            if total_time > 0:
+                for i, b in enumerate(buckets[:5], 1):
+                    t = b.get("time", 0)
+                    result[f"hr_z{i}_seconds"] = t
+                    result[f"hr_z{i}_pct"] = round(t / total_time * 100, 1)
+
+        elif zone_type == "power" and buckets:
+            total_time = sum(b.get("time", 0) for b in buckets)
+            if total_time > 0:
+                for i, b in enumerate(buckets[:5], 1):
+                    t = b.get("time", 0)
+                    result[f"power_z{i}_seconds"] = t
+                    result[f"power_z{i}_pct"] = round(t / total_time * 100, 1)
+
+    return result
+
+
+def build_activity_summary(activity):
+    """Extract key fields from DetailedActivity."""
+    sport = activity.get("sport_type") or activity.get("type", "Unknown")
+    category = SPORT_CATEGORY_MAP.get(sport, "OTHER")
+
+    return {
+        "strava_activity_id": activity.get("id"),
+        "sport_type": sport,
+        "start_date_local": activity.get("start_date_local", ""),
+        "duration_minutes": round(activity.get("moving_time", 0) / 60, 1),
+        "distance_meters": round(activity.get("distance", 0), 1),
+        "elevation_gain": round(activity.get("total_elevation_gain", 0), 1),
+        "calories": activity.get("calories", 0),
+        "average_speed_ms": round(activity.get("average_speed", 0), 3),
+        "max_speed_ms": round(activity.get("max_speed", 0), 3),
+        "average_hr": activity.get("average_heartrate"),
+        "max_hr": activity.get("max_heartrate"),
+        "has_heartrate": activity.get("has_heartrate", False),
+        "has_power": activity.get("device_watts", False),
+        "average_watts": activity.get("average_watts"),
+        "max_watts": activity.get("max_watts"),
+        "average_cadence": activity.get("average_cadence"),
+        "suffer_score": activity.get("suffer_score"),
+        "achievement_count": activity.get("achievement_count", 0),
+        "pr_count": activity.get("pr_count", 0),
+        "workout_type": activity.get("workout_type"),
+        "device_name": activity.get("device_name"),
+        "activity_category": category,
+    }
+
+
+def build_notion_payload(summary, stream_metrics, zones, splits, client_id, is_create=False):
+    """Build the Notion API payload for Daily Record create or update."""
+
+    properties = {
+        "strava_activity_ids": {
+            "rich_text": [{"text": {"content": str(summary["strava_activity_id"])}}]
+        },
+        "strava_sport_types": {
+            "rich_text": [{"text": {"content": summary["sport_type"]}}]
+        },
+        "strava_duration_total": {"number": summary["duration_minutes"]},
+        "strava_distance_total": {"number": summary["distance_meters"]},
+        "strava_elevation_total": {"number": summary["elevation_gain"]},
+        "strava_calories_total": {"number": summary["calories"]},
+        "strava_activity_count": {"number": 1},
+        "strava_primary_category": {"select": {"name": summary["activity_category"]}},
+        "strava_achievement_count": {"number": summary["achievement_count"]},
+        "strava_pr_count": {"number": summary["pr_count"]},
+    }
+
+    # HR fields
+    if summary.get("average_hr"):
+        properties["strava_hr_avg"] = {"number": round(summary["average_hr"], 1)}
+    if summary.get("max_hr"):
+        properties["strava_hr_max"] = {"number": round(summary["max_hr"])}
+    if summary.get("average_watts"):
+        properties["strava_average_watts"] = {"number": round(summary["average_watts"], 1)}
+    if summary.get("suffer_score"):
+        properties["strava_suffer_score"] = {"number": summary["suffer_score"]}
+
+    # Zone fields
+    for i in range(1, 6):
+        key = f"hr_z{i}_pct"
+        if key in zones:
+            properties[f"strava_hr_z{i}_pct"] = {"number": zones[key]}
+
+    # Stream-derived fields
+    field_map = {
+        "hr_recovery_30s": "strava_hr_recovery_30s",
+        "hr_recovery_60s": "strava_hr_recovery_60s",
+        "hr_drift_pct": "strava_hr_drift_pct",
+        "cadence_cv": "strava_cadence_cv",
+        "power_hr_decoupling": "strava_power_hr_decoupling",
+        "grade_adjusted_pace": "strava_grade_adjusted_pace",
+        "vertical_efficiency": "strava_vertical_efficiency",
+    }
+    for src, dst in field_map.items():
+        if src in stream_metrics and stream_metrics[src] is not None:
+            properties[dst] = {"number": stream_metrics[src]}
+
+    # Split fields
+    if "pace_consistency" in splits:
+        properties["strava_pace_consistency"] = {"number": splits["pace_consistency"]}
+
+    if is_create:
+        # Include parent, title, date, client relation
+        date_str = summary["start_date_local"][:10] if summary["start_date_local"] else datetime.utcnow().strftime("%Y-%m-%d")
+        client_page_id = CLIENT_MAP.get(client_id)
+
+        payload = {
+            "parent": {"database_id": DAILY_RECORDS_DB},
+            "properties": {
+                "record_id": {
+                    "title": [{"text": {"content": f"{client_id}_{date_str}"}}]
+                },
+                "date": {"date": {"start": date_str}},
+                **properties
+            }
+        }
+        if client_page_id:
+            payload["properties"]["client"] = {
+                "relation": [{"id": client_page_id}]
+            }
+        return json.dumps(payload)
+    else:
+        return json.dumps({"properties": properties})
+
+
+def main(request):
+    """Cloud Function entry point."""
+    # CORS preflight
+    if request.method == "OPTIONS":
+        return ("", 204, {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Max-Age": "3600",
+        })
+
+    headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return (json.dumps({"error": "No JSON payload"}), 400, headers)
+
+        activity = data.get("activity", {})
+        streams = data.get("streams", {})
+        zones_raw = data.get("zones", [])
+        client_id = data.get("client_id", "UNKNOWN")
+
+        # Process everything
+        summary = build_activity_summary(activity)
+        stream_metrics = process_streams(streams, activity)
+        zones = process_zones(zones_raw)
+        splits = process_splits(activity)
+
+        # Build Notion payloads
+        notion_update = build_notion_payload(summary, stream_metrics, zones, splits, client_id, is_create=False)
+        notion_create = build_notion_payload(summary, stream_metrics, zones, splits, client_id, is_create=True)
+
+        response = {
+            "activity_summary": summary,
+            "stream_metrics": stream_metrics,
+            "hr_zones": {k: v for k, v in zones.items() if k.startswith("hr_")},
+            "power_zones": {k: v for k, v in zones.items() if k.startswith("power_")},
+            "splits_summary": splits,
+            "notion_update_payload": notion_update,
+            "notion_create_payload": notion_create,
+        }
+
+        return (json.dumps(response), 200, headers)
+
+    except Exception as e:
+        return (json.dumps({"error": str(e)}), 500, headers)
