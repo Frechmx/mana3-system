@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANA³ | Personal Training × Coherence Science | Geneva</title>
+    <meta name="description" content="Elite personal training in Geneva, powered by continuous physiological measurement across 12 fields. With Maxime Fréchet.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0A0A0A',
+                        bone: '#F5F5F0',
+                        subdued: '#888888',
+                        manaBlue: '#3A86FF',
+                        manaYellow: '#FFD60A',
+                        manaRed: '#FF0033',
+                        manaGreen: '#38B000'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans antialiased overflow-x-hidden">
+
+    <div id="canvas-container" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"></div>
+
+    <nav class="fixed top-6 right-6 z-50 hidden md:block pointer-events-none">
+        <div class="flex gap-6 text-xs font-semibold tracking-widest uppercase pointer-events-auto bg-ink/40 backdrop-blur-md px-8 py-4 rounded-full border border-subdued/20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <a href="#method" class="text-subdued hover:text-bone transition-colors duration-300">Method</a>
+            <a href="#architect" class="text-subdued hover:text-bone transition-colors duration-300">Coach</a>
+            <a href="#science" class="text-subdued hover:text-bone transition-colors duration-300">System</a>
+            <a href="#pricing" class="text-subdued hover:text-bone transition-colors duration-300">Pricing</a>
+            <a href="#start" class="text-subdued hover:text-bone transition-colors duration-300">Start</a>
+            <span class="text-subdued/30">|</span>
+            <a href="deep-dive.html" class="text-bone hover:text-manaBlue transition-colors duration-300">The Science →</a>
+            <a href="the-architect.html" class="text-bone hover:text-manaBlue transition-colors duration-300">The Story →</a>
+        </div>
+        </div>
+    </nav>
+
+    <section id="hero" class="relative z-10 w-full h-screen flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 fade-up">
+            Geneva · Personal Training × Continuous Physiological Intelligence
+        </h2>
+        <h1 class="text-bone text-4xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight mb-8 fade-up">
+            Training that reads you<br>
+            <span class="text-subdued inline-block">before every session.</span>
+        </h1>
+        <p class="text-bone font-medium text-base md:text-lg mb-6 fade-up">
+            MANA³ — The Coherence Protocol.
+        </p>
+        <p class="text-subdued text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed fade-up">
+            Your wearable, your nervous system, and your morning state — synthesised into a single signal your coach reads before you train. One coach. Twelve fields. One continuous trajectory.
+        </p>
+
+        <!-- Scarcity line -->
+        <div class="inline-flex items-center gap-3 px-5 py-2 border border-subdued/30 rounded-full mb-10 fade-up pointer-events-auto">
+            <span class="w-1.5 h-1.5 rounded-full bg-manaYellow animate-pulse"></span>
+            <span class="text-[10px] md:text-xs uppercase tracking-[0.25em] text-subdued">
+                <!-- UPDATE NUMBER MANUALLY: e.g. "3 of 10 client slots available · Q2 2026" -->
+                Currently accepting new clients · 10-client cap
+            </span>
+        </div>
+
+        <!-- Dual CTA: Cal.com primary, WhatsApp secondary -->
+        <div class="flex flex-col sm:flex-row items-center gap-4 fade-up">
+            <a href="https://cal.com/mana-cubed" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-3 px-8 py-4 bg-bone text-ink font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_20px_rgba(245,245,240,0.1)] pointer-events-auto">
+                Book a 15-min introduction call
+            </a>
+            <a href="https://wa.me/33769685963?text=Hi%20Maxime%2C%20I'd%20like%20to%20learn%20more%20about%20MANA%C2%B3." class="inline-flex items-center justify-center gap-3 px-8 py-4 bg-transparent border border-subdued/40 text-bone font-medium rounded-full transition-all hover:border-bone hover:bg-bone/5 duration-500 ease-out pointer-events-auto">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.75.75 0 00.913.914l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.325 0-4.47-.744-6.227-2.01a.75.75 0 00-.635-.113l-3.166 1.062 1.062-3.166a.75.75 0 00-.113-.635A9.958 9.958 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                Or message on WhatsApp
+            </a>
+        </div>
+        <a href="#method" class="text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1 mt-8 pointer-events-auto fade-up">
+            How it works →
+        </a>
+    </section>
+
+    <section id="method" class="relative z-10 w-full min-h-screen flex flex-col items-center justify-center text-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            The Method
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            Personal training that sees<br>what no session alone can see.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-16 scroll-fade">
+            A single training session gives you one hour of observation. MANA³ gives your training a continuous measurement layer, tracking how your structure, nervous system, energy, and recovery interact across days and weeks. Every session is informed by real data. Every programme adapts to what your body is actually doing between sessions, not what we assume it's doing.
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full text-left pointer-events-auto">
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">In-Person Training</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Structural, movement, and nervous system work tailored to your body's current state, not a fixed programme. Sessions at your home, office, gym, or outdoors.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">Continuous Measurement</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Your wearable data, daily check-ins, and assessment results synthesised across 12 physiological fields. The system runs in the background, every day.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">Daily Intelligence</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Zero friction. A 60-second voice note and check-in each morning. The AI analyzes your cadence and context, cross-referencing your subjective narrative with your overnight telemetry, yesterday's layer scores plus a rolling 72-hour context window to deliver one profound, actionable observation for the day, grounded in the continuum.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="architect" class="relative z-10 w-full min-h-screen flex items-center justify-center px-6 py-32 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+            
+            <div class="relative w-full max-w-md mx-auto lg:mx-0 aspect-[3/4] bg-[#111] border border-subdued/20 rounded-sm overflow-hidden scroll-fade group">
+                <img src="maxime-portrait.jfif" class="absolute inset-0 w-full h-full object-cover grayscale opacity-90 mix-blend-luminosity z-10 transition-opacity duration-1000 group-hover:opacity-100" alt="Maxime Fréchet">
+                
+                <div class="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNCkiLz48L3N2Zz4=')] opacity-50"></div>
+                    <div id="scan-line-blue" class="absolute top-[30%] left-0 w-full h-[1px] bg-[#3A86FF]/60 shadow-[0_0_8px_#3A86FF] transition-opacity duration-700 opacity-50 group-hover:opacity-100"></div>
+                    <div class="absolute top-[10%] bottom-[10%] left-[35%] w-[1px] bg-[#FF0033]/40 shadow-[0_0_8px_#FF0033] transition-opacity duration-700 opacity-50 group-hover:opacity-100"></div>
+                </div>
+                
+                <div class="absolute bottom-6 left-6 z-30 text-left">
+                    <p class="text-xs tracking-[0.2em] text-subdued uppercase mb-1">Founder & Practitioner</p>
+                    <p class="text-sm font-semibold text-bone tracking-wide">Maxime Fréchet</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col text-left">
+                <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                    The Coach
+                </h2>
+                <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-2 scroll-fade">
+                    Maxime Fréchet
+                </h3>
+                <p class="text-subdued text-xs md:text-sm uppercase tracking-[0.15em] font-semibold mb-8 scroll-fade">
+                    Founder & Lead Practitioner
+                </p>
+                <p class="text-subdued text-base md:text-lg leading-relaxed mb-12 scroll-fade">
+                    Two decades spent crossing continents. A path shaped by the conviction that true performance lives at the intersection of science, movement, and inner transformation. Today, Maxime works with executives, entrepreneurs, and modern athletes in Geneva, bridging sports science with deeper frameworks of regulation, clarity, and sustainable high performance. MANA³ is the system he built to measure what no single session can see.
+                </p>
+
+                <div class="grid grid-cols-2 gap-6 mb-12 scroll-fade border-t border-subdued/20 pt-8">
+                    <div>
+                        <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Based in</p>
+                        <p class="text-bone text-sm">Geneva, Switzerland</p>
+                    </div>
+                    <div>
+                        <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Sessions</p>
+                        <p class="text-bone text-sm">Home, office, gym, outdoors</p>
+                    </div>
+                    <div>
+                        <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Languages</p>
+                        <p class="text-bone text-sm">English, French</p>
+                    </div>
+                    <div>
+                        <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Background</p>
+                        <p class="text-bone text-sm">MSc Integrative Physiology</p>
+                    </div>
+                </div>
+
+                <div class="scroll-fade">
+                    <a href="the-architect.html" class="inline-flex items-center gap-3 px-8 py-4 bg-transparent border border-bone text-bone font-bold rounded-full transition-all hover:bg-bone hover:text-ink duration-500 ease-out pointer-events-auto">
+                        The Full Story →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="science" class="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-6 py-32 max-w-7xl mx-auto text-center pointer-events-none">
+        <div class="max-w-4xl mx-auto mb-20 pointer-events-auto">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                The Relational Matrix
+            </h2>
+            <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                We do not track metrics.<br>We map the entire system.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed mb-8 scroll-fade">
+                Most platforms give you a sleep score and call it recovery. But human physiology does not operate in silos. A drop in energy is rarely just a metabolic issue; it is often a structural compensation masking an electrical deficit.
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full text-left pointer-events-auto">
+            <div data-interact="structure" class="science-card bg-ink/60 border border-subdued/10 p-8 rounded-xl hover:border-manaBlue/50 hover:shadow-[0_0_30px_rgba(58,134,255,0.1)] hover:-translate-y-1 scroll-fade cursor-pointer group">
+                <p class="text-subdued text-xs tracking-widest mb-3">01 / LAYER</p>
+                <h4 class="text-manaBlue text-2xl font-extrabold mb-4 tracking-tight">STRUCTURE</h4>
+                <p class="text-bone font-semibold text-sm mb-3">The Physical Architecture.</p>
+                <p class="text-subdued text-sm leading-relaxed">Bone, fascia, muscle, and movement pattern integrity. We map how your body bears load and moves through space.</p>
+            </div>
+            <div data-interact="electricity" class="science-card bg-ink/60 border border-subdued/10 p-8 rounded-xl hover:border-manaYellow/50 hover:shadow-[0_0_30px_rgba(255,214,10,0.1)] hover:-translate-y-1 scroll-fade cursor-pointer group">
+                <p class="text-subdued text-xs tracking-widest mb-3">02 / LAYER</p>
+                <h4 class="text-manaYellow text-2xl font-extrabold mb-4 tracking-tight">ELECTRICITY</h4>
+                <p class="text-bone font-semibold text-sm mb-3">The Nervous System.</p>
+                <p class="text-subdued text-sm leading-relaxed">Autonomic regulation and neural signal quality. We measure how efficiently your brain communicates with your body.</p>
+            </div>
+            <div data-interact="energy" class="science-card bg-ink/60 border border-subdued/10 p-8 rounded-xl hover:border-manaRed/50 hover:shadow-[0_0_30px_rgba(255,0,51,0.1)] hover:-translate-y-1 scroll-fade cursor-pointer group">
+                <p class="text-subdued text-xs tracking-widest mb-3">03 / LAYER</p>
+                <h4 class="text-manaRed text-2xl font-extrabold mb-4 tracking-tight">ENERGY</h4>
+                <p class="text-bone font-semibold text-sm mb-3">The Metabolic Engine.</p>
+                <p class="text-subdued text-sm leading-relaxed">Fuel efficiency and cellular capacity. How your system produces and allocates power under intense demands.</p>
+            </div>
+            <div data-interact="regulation" class="science-card bg-ink/60 border border-subdued/10 p-8 rounded-xl hover:border-manaGreen/50 hover:shadow-[0_0_30px_rgba(56,176,0,0.1)] hover:-translate-y-1 scroll-fade cursor-pointer group">
+                <p class="text-subdued text-xs tracking-widest mb-3">04 / LAYER</p>
+                <h4 class="text-manaGreen text-2xl font-extrabold mb-4 tracking-tight">REGULATION</h4>
+                <p class="text-bone font-semibold text-sm mb-3">The Adaptive Intelligence.</p>
+                <p class="text-subdued text-sm leading-relaxed">Recovery architecture and stress resilience. We track how your body maintains order under pressure.</p>
+            </div>
+        </div>
+
+        <!-- 12 Fields mini-grid -->
+        <div class="w-full mt-24 pointer-events-auto">
+            <div class="text-center mb-12 scroll-fade">
+                <p class="text-subdued text-xs uppercase tracking-[0.25em] font-semibold mb-3">Twelve Fields. Three per layer.</p>
+                <h4 class="text-bone text-xl md:text-2xl font-bold tracking-tight">
+                    Each layer measured across three dimensions.
+                </h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full text-left">
+                <!-- STRUCTURE -->
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade">
+                    <p class="text-manaBlue text-xs uppercase tracking-[0.25em] font-bold mb-5">01 / Structure</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F1</span><span class="text-bone text-sm font-medium">Mechanical Integrity</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F2</span><span class="text-bone text-sm font-medium">Structural Adaptability</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F3</span><span class="text-bone text-sm font-medium">Gravitational Efficiency</span></li>
+                    </ul>
+                </div>
+                <!-- ELECTRICITY -->
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade">
+                    <p class="text-manaYellow text-xs uppercase tracking-[0.25em] font-bold mb-5">02 / Electricity</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F4</span><span class="text-bone text-sm font-medium">Autonomic Balance</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F5</span><span class="text-bone text-sm font-medium">Neural Signal Quality</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F6</span><span class="text-bone text-sm font-medium">Interoceptive Coherence</span></li>
+                    </ul>
+                </div>
+                <!-- ENERGY -->
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade">
+                    <p class="text-manaRed text-xs uppercase tracking-[0.25em] font-bold mb-5">03 / Energy</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F7</span><span class="text-bone text-sm font-medium">Metabolic Efficiency</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F8</span><span class="text-bone text-sm font-medium">Hormonal Coherence</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F9</span><span class="text-bone text-sm font-medium">Cellular Vitality</span></li>
+                    </ul>
+                </div>
+                <!-- REGULATION -->
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade">
+                    <p class="text-manaGreen text-xs uppercase tracking-[0.25em] font-bold mb-5">04 / Regulation</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F10</span><span class="text-bone text-sm font-medium">Recovery Architecture</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F11</span><span class="text-bone text-sm font-medium">Stress Resilience</span></li>
+                        <li class="flex items-baseline gap-3"><span class="text-subdued text-[10px] font-semibold tracking-wider">F12</span><span class="text-bone text-sm font-medium">Adaptive Intelligence</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="text-center mt-10 scroll-fade">
+                <a href="deep-dive.html#fields" class="text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1">
+                    Explore each field in depth →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="relief" class="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-6 py-40 max-w-6xl mx-auto text-center pointer-events-none">
+        
+        <div class="max-w-3xl mx-auto mb-24 pointer-events-auto">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                The Relational Intelligence Layer
+            </h2>
+            <h3 class="text-bone text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                10,000 data points.<br>Expanding across time.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                MANA³ does not just capture a snapshot; it learns your physiological signature over time. We replace the standard dashboard with a multi-tiered intelligence protocol: daily micro-adjustments, weekly structural recalibrations, and longitudinal archetype mapping. The longer you use it, the deeper the synthesis. Until nothing knows your system better.
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full text-left mb-24 pointer-events-auto">
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">01 / The Daily Synthesis</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Zero friction. You speak naturally for 60 seconds. The AI analyzes your cadence and context, cross-referencing your subjective narrative with your overnight telemetry to deliver one profound, actionable observation for the day.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">02 / Oscillation Analysis</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Physiology is not linear; it oscillates. Every week, the system analyzes the shifting relationships across your 12 fields, mapping the gap between your energetic expenditure and autonomic recovery to tune the master coaching protocol.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">03 / The Relational Matrix</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Where true mastery begins. Through continuous Archetype Classification, the system learns your unique compensation patterns. Observations become so profoundly personalized that MANA³ predicts the friction before you even feel it.
+                </p>
+            </div>
+        </div>
+        
+        <div class="flex flex-col items-center scroll-fade pointer-events-auto">
+            <p class="text-subdued text-lg italic mb-8">
+                Stop managing the noise. <span class="text-bone font-semibold not-italic">Listen to the signal.</span>
+            </p>
+            <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                <a href="https://cal.com/mana-cubed" target="_blank" rel="noopener" class="inline-block px-10 py-5 bg-bone text-ink font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_30px_rgba(245,245,240,0.15)]">
+                    Book a call with Maxime
+                </a>
+                <a href="https://wa.me/33769685963?text=Hi%20Maxime%2C%20I'd%20like%20to%20learn%20more%20about%20MANA%C2%B3." class="inline-flex items-center gap-2 text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1">
+                    Or message on WhatsApp →
+                </a>
+            </div>
+            <a href="deep-dive.html" class="text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1 mt-4">
+                Explore the full science behind MANA³ →
+            </a>
+        </div>
+    </section>
+
+    <!-- TESTIMONIAL -->
+    <section id="testimonial" class="relative z-10 w-full flex flex-col items-center justify-center text-center px-6 py-32 max-w-4xl mx-auto pointer-events-auto">
+        <div class="scroll-fade">
+            <!-- PLACEHOLDER: Replace with your actual client testimonial -->
+            <p class="text-bone text-2xl md:text-3xl font-bold leading-tight tracking-tight italic mb-8 max-w-3xl">
+                "The defining metric of long-term capacity is not who can generate the highest amplitude, but who wastes the least amount of energy doing so."
+            </p>
+            <p class="text-subdued text-sm tracking-wide">
+                <span class="text-bone font-semibold">Maxime</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- FIRST 90 DAYS -->
+    <section id="journey" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-6xl mx-auto pointer-events-auto">
+        <div class="max-w-3xl mx-auto text-center mb-20">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                The Trajectory
+            </h2>
+            <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                What the first 90 days<br>look like.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                The system requires three months because that is how long it takes to map your unique physiological signature. Here is what happens between now and then.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full text-left mb-16">
+            <div class="border-l-2 border-subdued/30 pl-6 scroll-fade">
+                <p class="text-subdued text-xs uppercase tracking-[0.25em] font-semibold mb-3">Week 1</p>
+                <h4 class="text-bone text-lg font-bold mb-3">Activation</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    First in-person assessment. Wearable connected, daily check-ins begin, twelve-field baseline mapped. The system starts listening.
+                </p>
+            </div>
+            <div class="border-l-2 border-subdued/30 pl-6 scroll-fade">
+                <p class="text-subdued text-xs uppercase tracking-[0.25em] font-semibold mb-3">Weeks 2 – 3</p>
+                <h4 class="text-bone text-lg font-bold mb-3">Calibration</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    The system learns your baseline. Daily observations grow contextual. Your first weekly coherence brief lands. Sessions begin adapting to live data.
+                </p>
+            </div>
+            <div class="border-l-2 border-subdued/30 pl-6 scroll-fade">
+                <p class="text-subdued text-xs uppercase tracking-[0.25em] font-semibold mb-3">Weeks 4 – 6</p>
+                <h4 class="text-bone text-lg font-bold mb-3">Patterns Emerge</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    The first archetype patterns surface. Weekly briefs identify cross-field signatures — the compensations that have been quietly shaping your performance.
+                </p>
+            </div>
+            <div class="border-l-2 border-bone pl-6 scroll-fade">
+                <p class="text-bone text-xs uppercase tracking-[0.25em] font-semibold mb-3">Months 2 – 3</p>
+                <h4 class="text-bone text-lg font-bold mb-3">Predictive Coherence</h4>
+                <p class="text-bone/80 text-sm leading-relaxed">
+                    The relational matrix matures. Observations begin preempting friction before you feel it. The system becomes genuinely yours.
+                </p>
+            </div>
+        </div>
+
+        <p class="text-center text-subdued text-sm leading-relaxed max-w-2xl mx-auto scroll-fade italic">
+            Most clients notice a shift in energy and recovery within the first three to four weeks. The deeper synthesis takes longer — and is where the real work begins.
+        </p>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-6xl mx-auto pointer-events-auto">
+        <div class="max-w-3xl mx-auto text-center mb-20">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                Investment
+            </h2>
+            <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                Clear pricing.<br>No hidden layers.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Every plan includes the full MANA³ measurement system: daily observations, weekly synthesis, and continuous 12-field tracking. The difference is session frequency.
+            </p>
+        </div>
+
+        <!-- Scarcity statement -->
+        <div class="max-w-3xl mx-auto text-center mb-16 scroll-fade pointer-events-auto">
+            <div class="inline-flex items-center gap-3 px-5 py-2 border border-subdued/30 rounded-full mb-6">
+                <span class="w-1.5 h-1.5 rounded-full bg-manaYellow animate-pulse"></span>
+                <span class="text-[10px] md:text-xs uppercase tracking-[0.25em] text-bone">
+                    <!-- UPDATE NUMBER MANUALLY: e.g. "3 of 10 client slots currently available" -->
+                    A closed practice · 10 active clients maximum
+                </span>
+            </div>
+            <p class="text-subdued text-sm md:text-base leading-relaxed max-w-xl mx-auto">
+                MANA³ operates as a closed practice. Maximum ten active clients at any time — the ceiling at which one practitioner can sustain the depth of attention this system requires.
+            </p>
+        </div>
+        
+        <!-- PLACEHOLDER: Replace CHF amounts with your actual pricing -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+            <div class="bg-ink/60 border border-subdued/10 p-10 rounded-xl scroll-fade">
+                <p class="text-bone font-bold text-xl mb-2">Protocol</p>
+                <p class="text-subdued text-sm mb-6">The full expression of the system.</p>
+                <p class="text-bone text-4xl font-extrabold tracking-tight mb-1">CHF 599 <span class="text-subdued text-lg font-normal">/ month</span></p>
+                <p class="text-subdued text-xs tracking-wide mb-8">Minimum 3-month commitment</p>
+                <div class="space-y-3 text-sm text-subdued border-t border-subdued/20 pt-6">
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> 4 in-person training sessions per month</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Full MANA³ 12-field tracking</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Daily AI observations</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Weekly coherence brief</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Monthly deep assessment</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Priority WhatsApp access</p>
+                </div>
+            </div>
+            <div class="bg-ink/60 border border-bone/20 p-10 rounded-xl scroll-fade relative">
+                <div class="absolute top-0 left-10 bg-bone text-ink text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1">Recommended</div>
+                <p class="text-bone font-bold text-xl mb-2">Stellar</p>
+                <p class="text-subdued text-sm mb-6">Maximum frequency. Maximum signal.</p>
+                <p class="text-bone text-4xl font-extrabold tracking-tight mb-1">CHF 1,120 <span class="text-subdued text-lg font-normal">/ month</span></p>
+                <p class="text-subdued text-xs tracking-wide mb-8">Minimum 3-month commitment</p>
+                <div class="space-y-3 text-sm text-subdued border-t border-subdued/20 pt-6">
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> 8 in-person training sessions per month</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Full MANA³ 12-field tracking</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Daily AI observations</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Weekly coherence brief</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Monthly deep assessment</p>
+                    <p class="flex items-center gap-2"><span class="text-bone">—</span> Priority WhatsApp access</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW TO START -->
+    <section id="start" class="relative z-10 w-full flex flex-col items-center text-center px-6 py-32 max-w-4xl mx-auto pointer-events-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+            Begin
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            Three steps. No complexity.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-16 max-w-2xl scroll-fade">
+            The first conversation is free, informal, and has no obligation. We talk about what you're looking for, I explain how the system works, and we decide together if it's the right fit.
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full text-center mb-16">
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">1</p>
+                <p class="text-subdued text-sm leading-relaxed">Book a 15-minute introduction call — or message me on WhatsApp if you prefer.</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">2</p>
+                <p class="text-subdued text-sm leading-relaxed">We talk through what you're looking for. No commitment.</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">3</p>
+                <p class="text-subdued text-sm leading-relaxed">If it's a fit, we schedule your first assessment session.</p>
+            </div>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row items-center gap-4 scroll-fade">
+            <a href="https://cal.com/mana-cubed" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-3 px-10 py-5 bg-bone text-ink font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_30px_rgba(245,245,240,0.15)]">
+                Reserve your introduction call
+            </a>
+            <a href="https://wa.me/33769685963?text=Hi%20Maxime%2C%20I'd%20like%20to%20learn%20more%20about%20MANA%C2%B3." class="inline-flex items-center justify-center gap-3 px-10 py-5 bg-[#25D366] text-white font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_30px_rgba(37,211,102,0.15)]">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.75.75 0 00.913.914l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.325 0-4.47-.744-6.227-2.01a.75.75 0 00-.635-.113l-3.166 1.062 1.062-3.166a.75.75 0 00-.113-.635A9.958 9.958 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                WhatsApp Maxime
+            </a>
+        </div>
+    </section>
+
+    <footer id="contact" class="relative z-10 w-full bg-white/[0.03] backdrop-blur-lg border-t border-subdued/20 px-6 py-16 pointer-events-auto mt-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+            
+            <div>
+                <h4 class="text-bone text-2xl font-semibold tracking-tight mb-2">MANA³</h4>
+                <p class="text-subdued text-sm">&copy; 2026. All rights reserved.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-12 sm:gap-24">
+                
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Legal</p>
+                    <a href="privacy.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">Privacy Policy</a>
+                    <a href="deep-dive.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">The Science</a>
+                    <a href="the-architect.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300">The Architect</a>
+                </div>
+
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Contact</p>
+                    <p class="text-subdued text-sm mb-1">Get in touch</p>
+                    <a href="mailto:maxime-frechet@mana-cubed.com" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">maxime-frechet@mana-cubed.com</a>
+                    <p class="text-subdued text-sm">Geneva, Switzerland</p>
+                </div>
+                
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
