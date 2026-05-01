@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | MANA³</title>
+    <meta name="description" content="Privacy Policy for MANA³. How we collect, process, and protect your health and wellness data.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0A0A0A',
+                        bone: '#F5F5F0',
+                        subdued: '#888888',
+                        manaBlue: '#3A86FF',
+                        manaYellow: '#FFD60A',
+                        manaRed: '#FF0033',
+                        manaGreen: '#38B000'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background-color: #0A0A0A; color: #F5F5F0; }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden selection:bg-manaBlue selection:text-bone">
+
+    <nav class="fixed top-6 left-6 z-50 pointer-events-auto">
+        <a href="index.html" class="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-subdued hover:text-bone transition-colors duration-300 bg-ink/80 backdrop-blur-md px-6 py-3 rounded-full border border-subdued/20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            &larr; Back to System
+        </a>
+    </nav>
+
+    <header class="pt-40 pb-16 px-6 max-w-3xl mx-auto">
+        <p class="text-manaBlue text-xs tracking-[0.25em] uppercase font-semibold mb-4">Legal</p>
+        <h1 class="text-bone text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">Privacy Policy</h1>
+        <p class="text-subdued text-sm font-medium">Last updated: March 24, 2026</p>
+    </header>
+
+    <main class="px-6 max-w-3xl mx-auto pb-32">
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">1. Who We Are</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            MANA³ is a practitioner-facing coherence and performance tracking platform operated by Maxime Fréchet, based in Geneva, Switzerland. We process health and wellness data on behalf of practitioners and their clients to generate longitudinal coherence reports.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Data Controller:</strong> Maxime Fréchet, MANA³<br>
+            <strong class="text-bone font-semibold">Contact:</strong> <a href="/cdn-cgi/l/email-protection#670a061f0e0a024a011502040f0213270a0609064a04120502034904080a" class="text-manaBlue hover:text-bone transition-colors"><span class="__cf_email__" data-cfemail="7c111d04151119511a0e191f1419083c111d121d511f091e1918521f1311">[email&#160;protected]</span></a><br>
+            <strong class="text-bone font-semibold">Location:</strong> Geneva, Switzerland
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">2. What Data We Collect</h2>
+        <p class="text-subdued text-base leading-relaxed mb-8">
+            We collect and process data from three sources, corresponding to our three-tier data architecture. The data we collect falls into the following categories:
+        </p>
+
+        <div class="overflow-x-auto mb-12 border border-subdued/20 rounded-sm bg-[#111]">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                    <tr>
+                        <th class="border-b border-subdued/20 py-4 px-6 text-xs tracking-[0.15em] uppercase text-bone font-semibold bg-ink/50">Data Source</th>
+                        <th class="border-b border-subdued/20 py-4 px-6 text-xs tracking-[0.15em] uppercase text-bone font-semibold bg-ink/50">Data Types</th>
+                        <th class="border-b border-subdued/20 py-4 px-6 text-xs tracking-[0.15em] uppercase text-bone font-semibold bg-ink/50">Collection Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="hover:bg-subdued/5 transition-colors">
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top"><strong class="text-bone font-semibold">Wearable devices</strong><br>(Garmin, Polar, Oura)</td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Sleep scores, heart rate variability (HRV), resting heart rate, stress levels, Body Battery / readiness scores, training load, VO2max estimates, activity data, step count</td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Automated sync via device manufacturer APIs (Garmin Health API, Polar AccessLink API, Oura API). Data is pushed or pulled from the manufacturer's servers with the client's explicit authorization.</td>
+                    </tr>
+                    <tr class="hover:bg-subdued/5 transition-colors">
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top"><strong class="text-bone font-semibold">Practitioner assessments</strong></td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Postural analysis scores, movement screening results, clinical observations, body composition measurements, practitioner notes</td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Entered manually by the practitioner during scheduled assessment sessions.</td>
+                    </tr>
+                    <tr class="hover:bg-subdued/5 transition-colors">
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top"><strong class="text-bone font-semibold">Client check-ins</strong></td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Daily subjective ratings for energy, mood, soreness, sleep quality, stress perception, motivation, and recovery</td>
+                        <td class="border-b border-subdued/10 py-6 px-6 text-sm text-subdued align-top leading-relaxed">Submitted daily by the client via a digital form (Typeform).</td>
+                    </tr>
+                    <tr class="hover:bg-subdued/5 transition-colors">
+                        <td class="py-6 px-6 text-sm text-subdued align-top"><strong class="text-bone font-semibold">Account information</strong></td>
+                        <td class="py-6 px-6 text-sm text-subdued align-top leading-relaxed">Name, email address, date of birth, device type, practitioner assignment</td>
+                        <td class="py-6 px-6 text-sm text-subdued align-top leading-relaxed">Provided by the client or practitioner during onboarding.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">3. Why We Process Your Data</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            We process personal and health data for the following purposes:
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Coherence tracking and reporting:</strong> To generate longitudinal coherence reports that track how a client's physiological systems interact and evolve over time. This is the core service provided by MANA³.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Practitioner intelligence:</strong> To provide practitioners with data-driven insights that support their clinical decision-making in guiding clients toward their health, performance, and longevity goals.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Platform operation:</strong> To maintain client accounts, synchronize wearable data, process daily check-ins, and deliver reports.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">4. Legal Basis for Processing</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            Under the EU General Data Protection Regulation (GDPR) and the Swiss Federal Act on Data Protection (nFADP), we process your data on the following legal bases:
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Explicit consent (Art. 9(2)(a) GDPR):</strong> Health data is classified as a special category of personal data. We process this data only with the client's explicit, informed consent, obtained during onboarding. This consent covers the collection of wearable device data, practitioner assessment data, and daily check-in data.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Contractual necessity (Art. 6(1)(b) GDPR):</strong> Processing of account information is necessary to provide the MANA³ service as agreed between the practitioner, client, and platform.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">5. Wearable Device Data</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            MANA³ integrates with wearable device platforms including <strong class="text-bone font-semibold">Garmin</strong> (via the Garmin Health API), <strong class="text-bone font-semibold">Polar</strong> (via the Polar AccessLink API), and <strong class="text-bone font-semibold">Oura</strong> (via the Oura API) to collect wellness and activity data.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            When a client connects their wearable device to MANA³, they authorize the device manufacturer to share their data with our platform. This authorization can be revoked at any time through the device manufacturer's settings or by contacting us directly.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">We do not sell, share, or transfer wearable device data to any third party.</strong> Data received from wearable device APIs is used exclusively for generating coherence reports within the MANA³ platform and is accessible only to the client and their assigned practitioner.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            We do not store raw API responses beyond what is necessary to compute coherence scores. Processed data is stored as normalized anchor values (sleep score, readiness score, stress proxy) without retaining the full device data payload.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">6. AI and Data Processing</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            MANA³ uses an AI-assisted narrative engine to generate interpretive reports for practitioners based on pre-computed coherence scores. The following details describe how AI is used within the platform and how it relates to data obtained from wearable device APIs, including the Garmin Health API.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">AI is used in the application.</strong> MANA³ employs a large language model (LLM) via the Anthropic Claude API to generate narrative interpretations of coherence data. The AI receives pre-computed numerical scores — not raw API data — and produces written summaries that help practitioners understand trends, anomalies, and relationships across the twelve fields of the coherence model.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Garmin data is involved in this processing, but only as pre-computed scores.</strong> Data obtained from the Garmin Health API (sleep scores, stress levels, Body Battery, HRV, training load) is first processed deterministically by our scoring engine into normalized anchor values. These numerical scores — not the raw Garmin API data — are then passed to the AI narrative engine for interpretation. The AI does not receive raw Garmin API responses, device identifiers, or any personally identifiable information.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">No Garmin data is used to train, fine-tune, or improve any external AI or LLM model.</strong> The AI is accessed exclusively via API on a per-request basis. No client data, Garmin data, or any data processed by MANA³ is used to train, fine-tune, retrain, or otherwise improve any AI model, machine learning system, or large language model — whether operated by Anthropic, by MANA³, or by any third party. Data sent to the AI API is processed ephemerally and is not retained by the AI provider for training purposes.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">All scoring is deterministic.</strong> The coherence scores, gap calculations, and anomaly detection are computed by deterministic rule-based systems (not AI). The AI component is limited to narrative generation — translating numerical scores into human-readable practitioner reports. The AI does not make clinical decisions, diagnoses, or recommendations.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">7. How We Store Your Data</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            Client data is stored in a secure database with access restricted to the assigned practitioner and the MANA³ platform. We implement the following security measures:
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Access control:</strong> Each client's data is accessible only to their assigned practitioner and to the MANA³ system for report generation. No other practitioners, clients, or third parties can access the data.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Encryption:</strong> Data is encrypted in transit (TLS/SSL) and at rest where supported by the hosting infrastructure.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Data minimization:</strong> We collect only the data necessary to generate coherence reports. We do not collect GPS location data, social data, or any data beyond what is described in Section 2.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">8. Who Has Access to Your Data</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            Access to your data is strictly limited to:
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Your assigned practitioner:</strong> The practitioner you have been paired with through the MANA³ platform. They access your data to provide personalized guidance.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">The MANA³ platform:</strong> Automated systems that process your data to generate coherence scores and reports. This includes an AI-assisted narrative engine that produces interpretive summaries of your data for your practitioner.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">We do not share your data with advertisers, data brokers, research institutions, or any other third party.</strong> We do not use your data for any purpose other than delivering the MANA³ service.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">9. Data Retention</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            We retain your data for as long as you are an active client on the platform. If you or your practitioner terminate the service, we will delete your personal and health data within 30 days of receiving a deletion request, unless we are legally required to retain it for a longer period.
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            Anonymized, aggregated data that cannot be traced back to any individual may be retained for the purpose of improving the platform's coherence models.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">10. Your Rights</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            Under the GDPR and Swiss nFADP, you have the following rights regarding your personal data:
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            <strong class="text-bone font-semibold">Right of access:</strong> You can request a copy of all personal data we hold about you.<br><br>
+            <strong class="text-bone font-semibold">Right to rectification:</strong> You can request correction of inaccurate data.<br><br>
+            <strong class="text-bone font-semibold">Right to erasure:</strong> You can request deletion of your data at any time. This includes revocation of wearable device authorization.<br><br>
+            <strong class="text-bone font-semibold">Right to data portability:</strong> You can request your data in a structured, commonly used, machine-readable format.<br><br>
+            <strong class="text-bone font-semibold">Right to withdraw consent:</strong> You can withdraw your consent to data processing at any time. Withdrawal does not affect the lawfulness of processing carried out before the withdrawal.<br><br>
+            <strong class="text-bone font-semibold">Right to lodge a complaint:</strong> You have the right to lodge a complaint with a supervisory authority. For EU residents, this is the relevant Data Protection Authority in your member state. For Swiss residents, this is the Federal Data Protection and Information Commissioner (FDPIC).
+        </p>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            To exercise any of these rights, contact us at the address below.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">11. International Data Transfers</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            MANA³ operates from Switzerland, which benefits from an EU adequacy decision for data protection. When wearable device data is transferred from device manufacturers (who may store data outside Switzerland or the EU), this transfer is governed by the data processing agreements between the client and the device manufacturer (e.g., Garmin, Polar, Oura) and their respective privacy policies.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">12. Changes to This Policy</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            We may update this privacy policy from time to time to reflect changes in our practices or legal requirements. Any significant changes will be communicated to active clients and their practitioners. The date at the top of this page indicates when the policy was last updated.
+        </p>
+
+        <h2 class="text-bone text-2xl font-bold mt-16 mb-6 pb-4 border-b border-subdued/20">13. Contact</h2>
+        <p class="text-subdued text-base leading-relaxed mb-6">
+            For any questions, concerns, or requests related to this privacy policy or the processing of your personal data, please contact:
+        </p>
+        
+        <div class="border border-subdued/20 bg-[#111] p-8 rounded-sm mt-8 mb-16 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <p class="text-bone font-semibold text-lg mb-1">Maxime Fréchet</p>
+            <p class="text-subdued text-sm mb-6">MANA³ — Data Controller</p>
+            <a href="/cdn-cgi/l/email-protection#c1aca0b9a8aca4eca7b3a4a2a9a4b581aca0afa0eca2b4a3a4a5efa2aeac" class="text-manaBlue hover:text-bone transition-colors duration-300 block mb-1"><span class="__cf_email__" data-cfemail="adc0ccd5c4c0c880cbdfc8cec5c8d9edc0ccc3cc80ced8cfc8c983cec2c0">[email&#160;protected]</span></a>
+            <p class="text-subdued text-sm">Geneva, Switzerland</p>
+        </div>
+
+    </main>
+
+    <footer id="contact" class="relative z-10 w-full bg-white/[0.03] backdrop-blur-lg border-t border-subdued/20 px-6 py-16 pointer-events-auto mt-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+            
+            <div>
+                <h4 class="text-bone text-2xl font-semibold tracking-tight mb-2">MANA³</h4>
+                <p class="text-subdued text-sm">&copy; 2026. All rights reserved.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-12 sm:gap-24">
+                
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Legal</p>
+                    <a href="privacy.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300">Privacy Policy</a>
+                </div>
+
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Contact</p>
+                    <p class="text-subdued text-sm mb-1">Get in touch</p>
+                    <a href="/cdn-cgi/l/email-protec
