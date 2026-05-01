@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>MANA³</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+// ═══ PROMPT ANSWER SELECTION ═══
+const S6_WEBHOOK = 'https://hook.eu1.make.com/rn7s07ch2itq2uc5ea3jqhrpsre2n3t1';
+let selectedPromptAnswer = null;
+
+function selectPromptAnswer(el, answer) {
+  selectedPromptAnswer = answer;
+  document.querySelectorAll('#promptOptions div').forEach(d => {
+    d.style.background = 'var(--surface-heavy)';
+    d.style.borderColor = 'var(--border)';
+    d.style.color = 'var(--bone)';
+  });
+  el.style.background = 'rgba(58,134,255,0.15)';
+  el.style.borderColor = 'var(--manaBlue)';
+  el.style.color = 'var(--manaBlue)';
+  const btn = document.getElementById('promptSubmitBtn');
+  if (btn) btn.style.display = 'block';
+}
+
+async function submitPromptAnswer() {
+  if (!selectedPromptAnswer) return;
+  const btn = document.getElementById('promptSubmitBtn');
+  btn.innerText = 'Submitting...';
+  btn.disabled = true;
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  const date = new Date().toISOString().split('T')[0];
+  try {
+    await fetch(S6_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, date: date, answer: selectedPromptAnswer })
+    });
+    btn.innerText = 'Answer Submitted ✓';
+    btn.style.background = '#00C896';
+    setTimeout(() => fetchAndRender(), 2000);
+  } catch(e) {
+    btn.innerText = 'Error — Try Again';
+    btn.disabled = false;
+  }
+}
+
+</script>
+
+<style>
+  :root {
+    --ink: #0A0A0A;
+    --bone: #F5F5F0;
+    --subdued: #888888;
+    --manaBlue: #3A86FF;
+    --recording: #FF0033;
+    --surface: rgba(255, 255, 255, 0.03);
+    --surface-heavy: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.08);
+  }
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    background-color: var(--ink);
+    color: var(--bone);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  /* Ambient WebGL Background */
+  #canvas-container {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 0; pointer-events: none; opacity: 0.6;
+  }
+
+  /* Main App Container */
+  #app {
+    position: relative; z-index: 10; display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh; padding-top: env(safe-area-inset-top);
+  }
+
+  header {
+    padding: 20px; display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0) 100%);
+  }
+
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+
+  select {
+    background: var(--surface); color: var(--bone); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px;
+    backdrop-filter: blur(10px); outline: none;
+  }
+
+  /* Increased padding-bottom to 140px to ensure nothing is blocked by the nav bar */
+  .content {
+    flex: 1; overflow-y: auto; padding: 0 20px 140px 20px; scrollbar-width: none;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  .view { display: none; animation: fadeIn 0.3s ease; height: 100%; }
+  .view.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+
+  /* Glass Cards */
+  .card {
+    background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px;
+  }
+
+  .card h2 {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--subdued); margin-bottom: 16px; font-weight: 500;
+  }
+
+  /* ─── RECORD VIEW (No Box) ─── */
+  #view-record { align-items: center; justify-content: center; text-align: center; }
+  .record-title {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--subdued); margin-bottom: 20px; font-weight: 500;
+  }
+  .mic-button {
+    width: 120px; height: 120px; border-radius: 50%; background: var(--surface-heavy);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.3s ease; margin: 20px auto; backdrop-filter: blur(10px);
+  }
+  .mic-button svg { width: 40px; height: 40px; fill: var(--bone); transition: all 0.3s ease; }
+  .mic-button.recording {
+    background: rgba(255, 0, 51, 0.2); border-color: var(--recording);
+    box-shadow: 0 0 60px rgba(255, 0, 51, 0.2); animation: pulse 2s infinite;
+  }
+  .mic-button.recording svg { fill: var(--recording); }
+  @keyframes pulse {
+    0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); }
+  }
+  .status { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--subdued); height: 20px; }
+  .timer { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 300; margin: 10px 0; opacity: 0; }
+  .timer.visible { opacity: 1; }
+
+  /* ─── NATIVE CHECK-IN VIEW ─── */
+  .slider-group { margin-bottom: 24px; }
+  .slider-group label { display: block; font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--subdued); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0;
+  }
+  input[type=range]:focus { outline: none; }
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%; height: 4px; background: var(--surface-heavy); border-radius: 2px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+    background: var(--manaBlue); cursor: pointer; margin-top: -8px;
+    box-shadow: 0 0 10px rgba(58, 134, 255, 0.5); border: 2px solid var(--bone);
+  }
+  
+  textarea {
+    width: 100%; background: var(--surface-heavy); color: var(--bone);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font-family: 'Inter', sans-serif; font-size: 14px; resize: none; min-height: 80px; margin-top: 8px;
+  }
+
+  .btn-submit {
+    width: 100%; background: var(--manaBlue); color: #fff; border: none;
+    padding: 16px; border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 10px; margin-bottom: 30px; transition: opacity 0.2s;
+  }
+  .btn-submit:active { opacity: 0.8; }
+
+  #checkin-success { display: none; text-align: center; padding: 40px 20px; }
+
+  /* ─── HISTORY VIEW ─── */
+  .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .metric-box { background: var(--surface-heavy); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+  .metric-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--subdued); margin-bottom: 4px; }
+  .metric-value { font-size: 18px; font-weight: 500; }
+  
+  .layer-scores { margin-top: 16px; }
+  .layer-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; align-items: center; }
+  .layer-bar-bg { flex: 1; height: 4px; background: var(--surface-heavy); margin: 0 12px; border-radius: 2px; overflow: hidden; }
+  .layer-bar-fill { height: 100%; background: var(--manaBlue); border-radius: 2px; }
+  
+  .obs-box { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .obs-text { font-size: 13px; line-height: 1.6; color: rgba(245, 245, 240, 0.8); font-style: italic; }
+
+  /* ─── NAVIGATION ─── */
+  nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+    padding: 12px 10px calc(12px + env(safe-area-inset-bottom)) 10px; z-index: 20;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--subdued); font-size: 10px; font-weight: 500; transition: color 0.3s; width: 20%;
+  }
+  .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; opacity: 0.7; transition: all 0.3s; fill: currentColor; }
+  .nav-item.active { color: var(--manaBlue); }
+  .nav-item.active svg { opacity: 1; fill: var(--manaBlue); }
+
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div id="app">
+  <header>
+    <h1>MANA³</h1>
+    <select id="clientSelect">
+      <option value="mana-test">MANA-TEST (Sarah N.)</option>
+    </select>
+  </header>
+
+  <div class="content">
+    
+    <div id="view-record" class="view active">
+      <div class="record-title">Context Engine</div>
+      <div class="mic-button" id="micBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      </div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="status" id="status">Ready</div>
+    </div>
+
+    <div id="view-checkin" class="view">
+      <div class="card" id="checkin-form-container">
+        <h2>Daily Calibration</h2>
+        <form id="checkinForm" onsubmit="submitCheckin(event)">
+          
+          <div class="slider-group">
+            <label>1. How well did you sleep last night?</label>
+            <input type="range" id="q1" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Terribly</span><span>Exceptionally</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>2. How recovered do you feel right now?</label>
+            <input type="range" id="q2" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Depleted</span><span>Fully Charged</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>3. How does your body feel physically?</label>
+            <input type="range" id="q3" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Restricted/Pain</span><span>Moving Freely</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>4. Mental clarity and focus?</label>
+            <input type="range" id="q4" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Foggy</span><span>Sharp</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>5. Describe your stress level.</label>
+            <input type="range" id="q5" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Overwhelmed</span><span>Calm/In Control</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>6. Energy and appetite?</label>
+            <input type="range" id="q6" min="1" max="7" value="4">
+            <div class="slider-labels"><span>None/Cravings</span><span>Stable/Natural</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>7. Adaptation to current training/load?</label>
+            <input type="range" id="q7" min="1" max="7" value="4">
+            <div class="slider-labels"><span>Struggling</span><span>Progressing</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label>Optional Note</label>
+            <textarea id="q8" placeholder="Anything else worth noting? (e.g., late meal, argument, travel)"></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit" id="submitBtn">Transmit Baseline</button>
+        </form>
+      </div>
+
+      <div class="card" id="checkin-success">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--manaBlue)" stroke-width="2" style="margin: 0 auto 16px auto;"><path d="M20 6L9 17l-5-5"/></svg>
+        <h2 style="color: var(--bone); font-size: 18px;">Calibration Stored</h2>
+        <p style="color: var(--subdued); font-size: 14px; line-height: 1.5; margin-top: 8px;">Your subjective data has been routed to Make.com and is merging with your wearable metrics.</p>
+      </div>
+    </div>
+
+    <div id="view-today" class="view">
+      <div id="today-loading" class="card">
+        <p style="color: var(--subdued); font-size: 14px; text-align: center; padding: 20px 0;">Synchronizing...</p>
+      </div>
+      <div id="today-content" style="display:none;">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <div id="view-history" class="view">
+      <div id="history-loading" class="card">
+        <p style="color: var(--subdued); font-size: 14px; text-align: center; padding: 20px 0;">Loading history...</p>
+      </div>
+      <div id="history-content" style="display:none;">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <div id="view-weekly" class="view">
+      <div id="weekly-loading" class="card">
+        <p style="color: var(--subdued); font-size: 14px; text-align: center; padding: 20px 0;">Loading weekly brief...</p>
+      </div>
+      <div id="weekly-content" style="display:none;">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <nav>
+    <div class="nav-item active" onclick="switchTab('record')">
+      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      Record
+    </div>
+    <div class="nav-item" onclick="switchTab('checkin')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      Check-in
+    </div>
+    <div class="nav-item" onclick="switchTab('today')">
+      <svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></svg>
+      Today
+    </div>
+    <div class="nav-item" onclick="switchTab('history')">
+      <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+      History
+    </div>
+    <div class="nav-item" onclick="switchTab('weekly')">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+      Weekly
+    </div>
+  </nav>
+
+</div>
+
+<script>
+// ═══ TRUE WEBSITE 3D SHADER INTEGRATION ═══
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2('#0A0A0A', 0.12);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.z = 8.5; camera.position.y = 0.2;
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
+container.appendChild(renderer.domElement);
+
+function createGlowTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 32, 32);
+    return new THREE.CanvasTexture(canvas);
+}
+
+function createVaporTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256); 
+    gradient.addColorStop(0, 'rgba(245, 245, 240, 0)'); 
+    gradient.addColorStop(0.115, 'rgba(245, 245, 240, 0.8)'); 
+    gradient.addColorStop(0.25, 'rgba(58, 134, 255, 0.25)'); 
+    gradient.addColorStop(1, 'rgba(58, 134, 255, 0)'); 
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 512, 512);
+    return new THREE.CanvasTexture(canvas);
+}
+
+const particleTexture = createGlowTexture();
+const vaporTexture = createVaporTexture();
+
+const masterGroup = new THREE.Group(); scene.add(masterGroup);
+const scrollGroup = new THREE.Group(); scrollGroup.rotation.y = Math.PI / 5; masterGroup.add(scrollGroup);
+const breathingGroup = new THREE.Group(); scrollGroup.add(breathingGroup);
+
+const eventHorizonRadius = 0.40;
+const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true }); 
+breathingGroup.add(new THREE.Mesh(new THREE.SphereGeometry(eventHorizonRadius, 32, 32), voidMat));
+
+const rimShader = {
+    vertexShader: `varying vec3 vNormal; void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec3 vNormal; uniform float uOpacity; void main() { float intensity = pow(0.65 - dot(vNormal, vec3(0, 0, 1.0)), 4.0); gl_FragColor = vec4(0.6, 0.8, 1.0, 1.0) * intensity * uOpacity; }`
+};
+const rimMat = new THREE.ShaderMaterial({ vertexShader: rimShader.vertexShader, fragmentShader: rimShader.fragmentShader, uniforms: { uOpacity: { value: 0.7 } }, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
+breathingGroup.add(new THREE.Mesh(new THREE.SphereGeometry(eventHorizonRadius + 0.015, 32, 32), rimMat));
+
+const vaporMat = new THREE.MeshBasicMaterial({ map: vaporTexture, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, opacity: 0.8 });
+const vaporRing = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), vaporMat);
+vaporRing.rotation.y = Math.PI / 2; vaporRing.scale.set(1, 1.5, 1); breathingGroup.add(vaporRing);
+
+const vertexShader = `
+    attribute float aLayerId; attribute vec3 aBaseColor; attribute float aOffsetAngle; attribute float aBaseAngle;
+    uniform float uTime; uniform float uPixelRatio; varying vec3 vColor;
+    void main() {
+        vec3 separatedPos = vec3(cos(aBaseAngle + uTime * 0.1) * (1.2 + aLayerId * 0.15), (aLayerId - 1.5) * 0.7, sin(aBaseAngle + uTime * 0.1) * (1.2 + aLayerId * 0.15));
+        vec3 transformed = mix(position, separatedPos, 0.0);
+        transformed.x += sin(uTime * 0.5 + aOffsetAngle) * 0.05; transformed.y += cos(uTime * 0.5 + aOffsetAngle) * 0.05;
+        vColor = aBaseColor;
+        vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0); gl_Position = projectionMatrix * mvPosition;
+        gl_PointSize = (18.0 * uPixelRatio) / -mvPosition.z;
+    }
+`;
+const fragmentShader = `uniform sampler2D uTexture; varying vec3 vColor; void main() { gl_FragColor = texture2D(uTexture, gl_PointCoord); gl_FragColor.rgb *= vColor; }`;
+
+const particleCount = 8000; 
+const geometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3), layerIds = new Float32Array(particleCount), baseColors = new Float32Array(particleCount * 3), offsetAngles = new Float32Array(particleCount), baseAngles = new Float32Array(particleCount);
+const colorBone = new THREE.Color('#F5F5F0'), colorBlue = new THREE.Color('#3A86FF');
+const subduedColor = colorBone.clone().multiplyScalar(0.6);
+
+for (let i = 0; i < particleCount; i++) {
+    const layerIdx = Math.floor(Math.random() * 4); layerIds[i] = layerIdx;
+    let x = Math.random() * 8; x = (Math.random() > 0.5) ? -x : x;
+    const radius = Math.pow(Math.abs(x), 0.6) * 1.3 + (eventHorizonRadius + 0.02);
+    const angle = Math.random() * Math.PI * 2;
+    positions[i*3] = x; positions[i*3+1] = Math.cos(angle) * radius; positions[i*3+2] = Math.sin(angle) * radius; 
+    const c = (Math.random() > 0.80) ? colorBlue : subduedColor;
+    baseColors[i*3] = c.r; baseColors[i*3+1] = c.g; baseColors[i*3+2] = c.b;
+    offsetAngles[i] = angle; baseAngles[i] = angle; 
+}
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); geometry.setAttribute('aLayerId', new THREE.BufferAttribute(layerIds, 1)); geometry.setAttribute('aBaseColor', new THREE.BufferAttribute(baseColors, 3)); geometry.setAttribute('aOffsetAngle', new THREE.BufferAttribute(offsetAngles, 1)); geometry.setAttribute('aBaseAngle', new THREE.BufferAttribute(baseAngles, 1));
+
+const shaderMaterial = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: { uTime: { value: 0 }, uTexture: { value: particleTexture }, uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.5) } }, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 1.0 });
+const shaderParticles = new THREE.Points(geometry, shaderMaterial); shaderParticles.frustumCulled = false; 
+breathingGroup.add(shaderParticles);
+
+const clock = new THREE.Clock();
+function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
+    shaderMaterial.uniforms.uTime.value = time;
+    breathingGroup.rotation.z = Math.sin(time * 0.05) * 0.03;
+
+    const posArray = shaderParticles.geometry.attributes.position.array;
+    const angArray = shaderParticles.geometry.attributes.aOffsetAngle.array;
+    for (let i = 0; i < particleCount; i++) {
+        let i3 = i * 3; let x = posArray[i3]; 
+        let speed = 0.004 + (0.12 / (Math.abs(x) + 0.2)); 
+        angArray[i] += speed * 0.03;
+        if (x > 0) { x -= (0.01 + (x * 0.003)); if (x < 0.02) x = 8; } 
+        else { x += (0.01 + (Math.abs(x) * 0.003)); if (x > -0.02) x = -8; }
+        const radius = Math.pow(Math.abs(x), 0.6) * 1.3 + (eventHorizonRadius + 0.02);
+        posArray[i3] = x; posArray[i3+1] = Math.cos(angArray[i]) * radius; posArray[i3+2] = Math.sin(angArray[i]) * radius;
+    }
+    shaderParticles.geometry.attributes.position.needsUpdate = true;
+    shaderParticles.geometry.attributes.aOffsetAngle.needsUpdate = true;
+
+    renderer.render(scene, camera);
+}
+animate();
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+
+// ═══ PUSH SUBSCRIPTION RE-SYNC ═══
+const PUSH_WEBHOOK = 'https://hook.eu1.make.com/c4a6mkk88u39eh64abtoljkmwr55yu3z';
+const VAPID_PUBLIC_KEY = 'BA9Sm_gUHInq01hfh9FepWNViHH_OU47-gjvA9rWw0OI6UEgtALipN6TessjF8JCOdppY6zmx3QRXeeI9bpgB6E';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function syncPushSubscription() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const clientId = document.getElementById('clientSelect').value.toUpperCase();
+    await fetch(PUSH_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, subscription: JSON.stringify(sub) })
+    });
+  } catch(e) {
+    console.log('Push sync skipped:', e.message);
+  }
+}
+
+// Register service worker and sync subscription on every load
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(() => {
+    syncPushSubscription();
+  });
+}
+
+// ═══ TAB NAVIGATION ═══
+function switchTab(tabId) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById(`view-${tabId}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(tabId === 'checkin') checkState();
+  if(tabId === 'today' || tabId === 'history') fetchAndRender();
+  if(tabId === 'weekly') fetchWeeklyBrief();
+}
+
+// ═══ NATIVE CHECK-IN SUBMISSION (Make.com S8 Pipeline) ═══
+const CHECKIN_WEBHOOK = 'https://hook.eu1.make.com/2w52qgovwtqhcm9ojw5t3l213dyv52fm';
+
+async function submitCheckin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.innerText = "Transmitting...";
+  
+  // Wrap slider values in Number() to send integers to Make.com/Notion
+  const clientRaw = document.getElementById('clientSelect').value;
+  const payload = {
+    client_id: clientRaw.toUpperCase(),
+    date: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toISOString(),
+    q1: Number(document.getElementById('q1').value),
+    q2: Number(document.getElementById('q2').value),
+    q3: Number(document.getElementById('q3').value),
+    q4: Number(document.getElementById('q4').value),
+    q5: Number(document.getElementById('q5').value),
+    q6: Number(document.getElementById('q6').value),
+    q7: Number(document.getElementById('q7').value),
+    note: document.getElementById('q8').value || ""
+  };
+
+  try {
+    await fetch(CHECKIN_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {
+    console.log("Check-in saved locally.");
+  }
+
+  localStorage.setItem('mana3_checkin_completed', new Date().toDateString());
+  checkState();
+}
+
+function checkState() {
+  if(localStorage.getItem('mana3_checkin_completed') === new Date().toDateString()) {
+    document.getElementById('checkin-form-container').style.display = 'none';
+    document.getElementById('checkin-success').style.display = 'block';
+  } else {
+    document.getElementById('checkin-form-container').style.display = 'block';
+    document.getElementById('checkin-success').style.display = 'none';
+  }
+}
+checkState(); 
+
+// ═══ AUDIO RECORDING LOGIC (Hardened for iOS/Android) ═══
+
+const AUDIO_WEBHOOK_URL = 'https://hook.eu1.make.com/6afth86mn73agdy54gy6hjs41qtodpss';
+
+let mediaRecorder; 
+let audioChunks = []; 
+let isRecording = false; 
+let timerInterval; 
+let startTime;
+
+const micBtn = document.getElementById('micBtn'); 
+const status = document.getElementById('status'); 
+const timerDisplay = document.getElementById('timer');
+
+micBtn.addEventListener('click', async () => { 
+  if (!isRecording) await startRecording(); 
+  else stopRecording(); 
+});
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // We let the browser choose its native preferred format (mp4 on iOS, webm on Chrome)
+    mediaRecorder = new MediaRecorder(stream); 
+    audioChunks = [];
+    
+    mediaRecorder.addEventListener('dataavailable', e => {
+        if(e.data.size > 0) audioChunks.push(e.data);
+    });
+    
+    mediaRecorder.addEventListener('stop', async () => {
+      // Capture the exact mimeType the browser used
+      const mimeType = mediaRecorder.mimeType || 'audio/webm';
+      const audioBlob = new Blob(audioChunks, { type: mimeType });
+      
+      await uploadAudio(audioBlob, mimeType); 
+      stream.getTracks().forEach(t => t.stop());
+    });
+    
+    mediaRecorder.start(); 
+    isRecording = true; 
+    micBtn.classList.add('recording');
+    status.innerText = 'Recording... Tap to finish'; 
+    status.style.color = 'var(--recording)';
+    
+    startTime = Date.now(); 
+    timerDisplay.classList.add('visible'); 
+    timerInterval = setInterval(updateTimer, 1000);
+    
+  } catch (err) { 
+    console.error("Mic Access Error:", err);
+    status.innerText = 'Microphone access denied'; 
+    status.style.color = 'var(--recording)';
+  }
+}
+
+function stopRecording() {
+  if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop(); 
+  }
+  isRecording = false; 
+  micBtn.classList.remove('recording');
+  clearInterval(timerInterval); 
+  timerDisplay.classList.remove('visible'); 
+  timerDisplay.innerText = '00:00';
+  status.innerText = 'Processing synthesis...'; 
+  status.style.color = 'var(--manaBlue)';
+}
+
+function updateTimer() {
+  const diff = Math.floor((Date.now() - startTime) / 1000);
+  const m = String(Math.floor(diff / 60)).padStart(2, '0');
+  const s = String(diff % 60).padStart(2, '0');
+  timerDisplay.innerText = `${m}:${s}`;
+}
+
+async function uploadAudio(blob, mimeType) {
+  const fd = new FormData(); 
+  
+  // Assign the correct file extension so Make.com can parse it properly
+  let extension = 'webm';
+  if (mimeType.includes('mp4')) extension = 'm4a';
+  if (mimeType.includes('mpeg')) extension = 'mp3';
+  if (mimeType.includes('ogg')) extension = 'ogg';
+
+  fd.append('file', blob, `memo.${extension}`);
+  fd.append('client_id', document.getElementById('clientSelect').value); 
+  fd.append('timestamp', new Date().toISOString());
+  
+  try {
+    const res = await fetch(AUDIO_WEBHOOK_URL, { 
+      method: 'POST', 
+      body: fd 
+    });
+    
+    if (res.ok) { 
+        status.innerText = 'Transmitted successfully.'; 
+        status.style.color = 'var(--bone)'; 
+    } else {
+        status.innerText = `Server Error (${res.status}). Try again.`; 
+        status.style.color = 'var(--recording)';
+    }
+  } catch (err) { 
+    console.error("Upload Error:", err);
+    // If you see this, the Webhook URL is wrong or Make.com is rejecting the CORS request
+    status.innerText = 'Network Error. Check Webhook URL.'; 
+    status.style.color = 'var(--recording)'; 
+  }
+  
+  setTimeout(() => { 
+      status.innerText = 'Ready'; 
+      status.style.color = 'var(--subdued)'; 
+  }, 4000);
+}
+
+// ═══ DATA API ═══
+const DATA_API = 'https://mana3-data-api-729441226036.europe-west1.run.app';
+let cachedData = null;
+
+function bandColor(band) {
+  const map = { Deep: '#00C896', Functional: '#3A86FF', Emerging: '#FFB800', Fragmented: '#FF6B35', Systemic: '#FF0033' };
+  return map[band] || '#888888';
+}
+
+function scoreColor(score) {
+  if (score >= 75) return '#00C896';
+  if (score >= 50) return '#3A86FF';
+  if (score >= 30) return '#FFB800';
+  return '#FF6B35';
+}
+
+function layerBar(label, score) {
+  const color = scoreColor(score);
+  return `
+    <div class="layer-row">
+      <span style="width:80px;font-size:12px;">${label}</span>
+      <div class="layer-bar-bg"><div class="layer-bar-fill" style="width:${score}%;background:${color};"></div></div>
+      <span style="font-family:'JetBrains Mono';font-size:12px;width:28px;text-align:right;">${Math.round(score)}</span>
+    </div>`;
+}
+
+function wearableChips(w) {
+  if (!w) return '';
+  const chips = [
+    { label: 'Sleep', val: w.sleep_score, unit: '' },
+    { label: 'HRV', val: w.hrv, unit: 'ms' },
+    { label: 'RHR', val: w.rhr, unit: 'bpm' },
+    { label: 'Stress', val: w.stress, unit: '' },
+    { label: 'Steps', val: w.steps ? w.steps.toLocaleString() : null, unit: '' },
+  ].filter(c => c.val != null);
+  return `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+    ${chips.map(c => `<div style="background:var(--surface-heavy);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'JetBrains Mono';">
+      <span style="color:var(--subdued);">${c.label} </span><span>${c.val}${c.unit}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ═══ WEEKLY BRIEF ═══
+let weeklyBriefLoaded = false;
+
+async function fetchWeeklyBrief() {
+  if (weeklyBriefLoaded) return;
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  try {
+    const res = await fetch(`${DATA_API}?client_id=${clientId}&endpoint=weekly-brief`);
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    renderWeeklyBrief(data);
+    weeklyBriefLoaded = true;
+  } catch(e) {
+    document.getElementById('weekly-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load weekly brief.</p>';
+  }
+}
+
+function renderWeeklyBrief(data) {
+  const b = data.brief;
+  if (!b || !b.client_brief) {
+    document.getElementById('weekly-loading').innerHTML = `
+      <div class="card">
+        <h2>Weekly Coherence Brief</h2>
+        <p style="color: var(--subdued); font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
+          Your strategic synthesis runs every <strong>Monday at 7:30 AM</strong>. It maps your progression across all 4 physiological layers over the past 7 days.
+        </p>
+        <div style="padding: 12px; background: var(--surface-heavy); border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-family: 'JetBrains Mono'; font-size: 12px; color: var(--manaBlue);">NEXT GENERATION</div>
+          <div style="font-size: 14px; margin-top: 4px;">Monday, 07:30 AM</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const cb = b.client_brief;
+  const weekStart = b.week_start ? new Date(b.week_start + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const weekEnd = b.week_end ? new Date(b.week_end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const weekLabel = weekStart && weekEnd ? `${weekStart} — ${weekEnd}` : (b.week_id || 'This Week');
+
+  const layerColors = {
+    structure: '#3A86FF',
+    electricity: '#FFB800',
+    energy: '#00C896',
+    regulation: '#FF6B35'
+  };
+
+  const layerNames = {
+    structure: 'Structure',
+    electricity: 'Electricity',
+    energy: 'Energy',
+    regulation: 'Regulation'
+  };
+
+  const layerIcons = {
+    structure: '◇',
+    electricity: '⚡',
+    energy: '●',
+    regulation: '◎'
+  };
+
+  function layerSection(key) {
+    const text = cb[key];
+    if (!text) return '';
+    return `
+      <div style="margin-bottom:16px;padding:16px;background:var(--surface-heavy);border-radius:12px;border-left:3px solid ${layerColors[key]};">
+        <div style="font-family:'JetBrains Mono';font-size:11px;color:${layerColors[key]};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">
+          ${layerIcons[key]} ${layerNames[key]}
+        </div>
+        <p style="font-size:13px;line-height:1.6;color:rgba(245,245,240,0.85);">${text}</p>
+      </div>`;
+  }
+
+  document.getElementById('weekly-content').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+        <h2 style="margin-bottom:0;">Weekly Coherence Brief</h2>
+        <span style="font-family:'JetBrains Mono';font-size:11px;color:var(--subdued);background:var(--surface-heavy);padding:4px 10px;border-radius:10px;">${weekLabel}</span>
+      </div>
+
+      ${cb.overview ? `<p style="font-size:14px;line-height:1.7;color:var(--bone);margin-bottom:20px;">${cb.overview}</p>` : ''}
+
+      ${layerSection('structure')}
+      ${layerSection('electricity')}
+      ${layerSection('energy')}
+      ${layerSection('regulation')}
+
+      ${cb.highlight ? `
+      <div style="margin-top:8px;padding:16px;background:rgba(58,134,255,0.08);border-radius:12px;border:1px solid rgba(58,134,255,0.2);">
+        <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--manaBlue);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">✦ Week Highlight</div>
+        <p style="font-size:13px;line-height:1.6;color:var(--bone);">${cb.highlight}</p>
+      </div>` : ''}
+    </div>`;
+
+  document.getElementById('weekly-loading').style.display = 'none';
+  document.getElementById('weekly-content').style.display = 'block';
+}
+
+function cycleBar(label, value, leftLabel, rightLabel) {
+  if (value === null || value === undefined) return '';
+  // value is -3 to +3, convert to percentage position (0% = -3, 50% = 0, 100% = +3)
+  const pct = ((value + 3) / 6) * 100;
+  const isNeg = value < -0.3;
+  const isPos = value > 0.3;
+  const dotColor = isNeg ? '#FF6B35' : (isPos ? '#00C896' : 'var(--subdued)');
+  const valueText = value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+  return `
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--subdued);text-transform:uppercase;letter-spacing:0.05em;">${label}</span>
+        <span style="font-family:'JetBrains Mono';font-size:11px;color:${dotColor};">${valueText}</span>
+      </div>
+      <div style="position:relative;height:6px;background:var(--surface-heavy);border-radius:3px;overflow:visible;">
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.15);"></div>
+        <div style="position:absolute;left:${pct}%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:${dotColor};box-shadow:0 0 8px ${dotColor}44;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:9px;color:var(--subdued);text-transform:uppercase;">${leftLabel}</span>
+        <span style="font-size:9px;color:var(--subdued);text-transform:uppercase;">${rightLabel}</span>
+      </div>
+    </div>`;
+}
+
+function renderCycleIndicators(ci) {
+  if (!ci) return '';
+  const rp = ci.recovery_proportionality;
+  const soa = ci.subjective_objective_alignment;
+  const load = ci.load_72h;
+
+  const hasAny = rp !== null || soa !== null || load !== null;
+  if (!hasAny) return '';
+
+  let loadHtml = '';
+  if (load) {
+    function metricBox(label, value, unit) {
+      if (value === null || value === undefined) return '';
+      return `<div style="flex:1;min-width:45%;background:var(--surface-heavy);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+        <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--subdued);text-transform:uppercase;margin-bottom:4px;">${label}</div>
+        <div style="font-family:'JetBrains Mono';font-size:18px;color:var(--bone);">${value}<span style="font-size:10px;color:var(--subdued);"> ${unit}</span></div>
+      </div>`;
+    }
+    const boxes = [
+      metricBox('72h Avg Total Cal', load.avg_cal, 'cal'),
+      metricBox('72h Avg HRV', load.avg_hrv, 'ms'),
+      metricBox('72h Avg Stress', load.avg_stress, ''),
+      metricBox('72h Avg Sleep', load.avg_sleep, ''),
+    ].filter(b => b).join('');
+
+    if (boxes) {
+      loadHtml = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">${boxes}</div>`;
+    }
+  }
+
+  return `
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div class="metric-label" style="margin-bottom:14px;">CYCLE INDICATORS</div>
+      ${rp !== null ? cycleBar('Recovery Proportionality', rp, 'Under-recovered', 'Over-recovered') : ''}
+      ${soa !== null ? cycleBar('Body-Mind Alignment', soa, 'Feels worse', 'Feels better') : ''}
+      ${loadHtml}
+    </div>`;
+}
+
+function renderToday(data) {
+  const t = data.today;
+  if (!t) {
+    document.getElementById('today-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">No data for today yet. Check back after 11:30 AM.</p>';
+    return;
+  }
+  const bc = bandColor(t.band);
+  const sc = scoreColor(t.overall_score);
+  const ls = t.layer_scores || {};
+  const ci = data.cycle_indicators || null;
+
+  // Dynamic date header
+  const todayDate = t.date ? new Date(t.date + 'T12:00:00') : new Date();
+  const dayName = todayDate.toLocaleDateString('en-GB', { weekday: 'short' });
+  const dayNum = todayDate.getDate();
+  const suffix = [,'st','nd','rd'][dayNum % 10 > 3 ? 0 : (dayNum % 100 - dayNum % 10 != 10) * dayNum % 10] || 'th';
+  const monthName = todayDate.toLocaleDateString('en-GB', { month: 'long' });
+  const dateLabel = `Today, ${dayName} ${dayNum}${suffix} of ${monthName}`;
+
+  let promptHtml = '';
+  if (t.prompt && t.prompt.fired) {
+    const p = t.prompt;
+    const hasAnswer = p.answer && p.answer.trim() !== '';
+    const opts = (p.options || []).map(o => {
+      const isAnswer = hasAnswer && o === p.answer;
+      if (hasAnswer) {
+        return `<div style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:6px;background:${isAnswer ? 'rgba(58,134,255,0.15)' : 'var(--surface-heavy)'};border:1px solid ${isAnswer ? 'var(--manaBlue)' : 'var(--border)'};color:${isAnswer ? 'var(--manaBlue)' : 'var(--bone)'};">${o}${isAnswer ? ' ✓' : ''}</div>`;
+      } else {
+        const escaped = o.replace(/'/g, "\\'");
+        return `<div onclick="selectPromptAnswer(this, '${escaped}')" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:6px;background:var(--surface-heavy);border:1px solid var(--border);color:var(--bone);cursor:pointer;transition:all 0.2s;">${o}</div>`;
+      }
+    }).join('');
+    const submitBtn = hasAnswer ? '' : `<button id="promptSubmitBtn" onclick="submitPromptAnswer()" style="display:none;width:100%;background:var(--manaBlue);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;">Submit Answer</button>`;
+    promptHtml = `
+      <div class="card" style="margin-top:0;">
+        <h2>Daily Prompt</h2>
+        <p style="font-size:13px;line-height:1.6;margin-bottom:12px;">${p.question}</p>
+        <div id="promptOptions">${opts}</div>
+        ${submitBtn}
+      </div>`;
+  }
+
+  document.getElementById('today-content').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+        <div>
+          <h2 style="margin-bottom:4px;">${dateLabel}</h2>
+          <span style="font-size:11px;font-family:'JetBrains Mono';color:${bc};background:${bc}22;padding:2px 8px;border-radius:10px;border:1px solid ${bc}44;">${t.band}</span>
+        </div>
+        <span style="font-family:'JetBrains Mono';font-size:32px;color:${sc};">${Math.round(t.overall_score)}<span style="font-size:12px;color:var(--subdued);">/100</span></span>
+      </div>
+
+      <div class="layer-scores">
+        <div class="metric-label" style="margin-bottom:12px;">SYSTEM LAYERS</div>
+        ${layerBar('Structure', ls.structure || 0)}
+        ${layerBar('Electricity', ls.electricity || 0)}
+        ${layerBar('Energy', ls.energy || 0)}
+        ${layerBar('Regulation', ls.regulation || 0)}
+      </div>
+
+      ${renderCycleIndicators(ci)}
+
+      ${wearableChips(t.wearable)}
+
+      ${t.observation ? `
+      <div class="obs-box">
+        <div class="metric-label">OBSERVATION</div>
+        <div class="obs-text" style="margin-top:8px;">"${t.observation}"</div>
+      </div>` : ''}
+    </div>
+    ${promptHtml}`;
+
+  document.getElementById('today-loading').style.display = 'none';
+  document.getElementById('today-content').style.display = 'block';
+}
+
+function renderHistory(data) {
+  const history = data.history || [];
+  if (!history.length) {
+    document.getElementById('history-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">No history yet.</p>';
+    return;
+  }
+
+  const cards = history.map(day => {
+    const sc = scoreColor(day.overall_score);
+    const ls = day.layer_scores || {};
+    const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    return `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+          <div>
+            <h2 style="margin-bottom:4px;">${dateLabel}</h2>
+            <span style="font-size:11px;font-family:'JetBrains Mono';color:var(--subdued);">${day.observation_layer || ''} · ${day.observation_type || ''}</span>
+          </div>
+          <span style="font-family:'JetBrains Mono';font-size:24px;color:${sc};">${Math.round(day.overall_score)}<span style="font-size:11px;color:var(--subdued);">/100</span></span>
+        </div>
+
+        <div class="layer-scores">
+          ${layerBar('Structure', ls.structure || 0)}
+          ${layerBar('Electricity', ls.electricity || 0)}
+          ${layerBar('Energy', ls.energy || 0)}
+          ${layerBar('Regulation', ls.regulation || 0)}
+        </div>
+
+        ${wearableChips(day.wearable)}
+
+        ${day.observation ? `
+        <div class="obs-box">
+          <div class="metric-label">OBSERVATION</div>
+          <div class="obs-text" style="margin-top:8px;">"${day.observation}"</div>
+        </div>` : ''}
+
+        ${day.prompt && day.prompt.fired && day.prompt.answer ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div class="metric-label" style="margin-bottom:6px;">PROMPT ANSWER</div>
+          <div style="font-size:12px;color:var(--subdued);margin-bottom:4px;">${day.prompt.question}</div>
+          <div style="font-size:13px;color:var(--manaBlue);">→ ${day.prompt.answer}</div>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+
+  document.getElementById('history-content').innerHTML = cards;
+  document.getElementById('history-loading').style.display = 'none';
+  document.getElementById('history-content').style.display = 'block';
+}
+
+async function fetchAndRender() {
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const res = await fetch(`${DATA_API}?client_id=${clientId}&date=${today}`);
+    if (!res.ok) throw new Error('API error');
+    cachedData = await res.json();
+    renderToday(cachedData);
+    renderHistory(cachedData);
+  } catch(e) {
+    document.getElementById('today-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load data. Check connection.</p>';
+    document.getElementById('history-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load history.</p>';
+  }
+}
+
+// Fetch on load and when switching to today/history tabs
+fetchAndRender();
+
+const _origSwitchTab = switchTab;
+function switchTab(tabId) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById(`view-${tabId}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(tabId === 'checkin') checkState();
+  if(tabId === 'today' || tabId === 'history') fetchAndRender();
+  if(tabId === 'weekly') fetchWeeklyBrief();
+}
+
+// ═══ PROMPT ANSWER SELECTION ═══
+const S6_WEBHOOK = 'https://hook.eu1.make.com/rn7s07ch2itq2uc5ea3jqhrpsre2n3t1';
+let selectedPromptAnswer = null;
+
+function selectPromptAnswer(el, answer) {
+  selectedPromptAnswer = answer;
+  document.querySelectorAll('#promptOptions div').forEach(d => {
+    d.style.background = 'var(--surface-heavy)';
+    d.style.borderColor = 'var(--border)';
+    d.style.color = 'var(--bone)';
+  });
+  el.style.background = 'rgba(58,134,255,0.15)';
+  el.style.borderColor = 'var(--manaBlue)';
+  el.style.color = 'var(--manaBlue)';
+  const btn = document.getElementById('promptSubmitBtn');
+  if (btn) btn.style.display = 'block';
+}
+
+async function submitPromptAnswer() {
+  if (!selectedPromptAnswer) return;
+  const btn = document.getElementById('promptSubmitBtn');
+  btn.innerText = 'Submitting...';
+  btn.disabled = true;
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  const date = new Date().toISOString().split('T')[0];
+  try {
+    await fetch(S6_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, date: date, answer: selectedPromptAnswer })
+    });
+    btn.innerText = 'Answer Submitted ✓';
+    btn.style.background = '#00C896';
+    setTimeout(() => fetchAndRender(), 2000);
+  } catch(e) {
+    btn.innerText = 'Error — Try Again';
+    btn.disabled = false;
+  }
+}
+
+</script>
+</body>
+</html>
