@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANA³ | The Architect — Maxime Fréchet</title>
+    <meta name="description" content="Two decades at the intersection of science, performance, and inner transformation. The story behind MANA³ and its creator.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0A0A0A',
+                        bone: '#F5F5F0',
+                        subdued: '#888888',
+                        manaBlue: '#3A86FF',
+                        manaYellow: '#FFD60A',
+                        manaRed: '#FF0033',
+                        manaGreen: '#38B000'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; background-color: #0A0A0A; }
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        #canvas-container { pointer-events: none; }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden bg-ink">
+
+    <div id="canvas-container" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"></div>
+
+    <nav class="fixed top-6 right-6 z-50 hidden md:block pointer-events-none">
+        <div class="flex gap-6 text-xs font-semibold tracking-widest uppercase pointer-events-auto bg-ink/40 backdrop-blur-md px-8 py-4 rounded-full border border-subdued/20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <a href="index.html" class="text-bone hover:text-manaBlue transition-colors duration-300">← Home</a>
+            <span class="text-subdued/30">|</span>
+            <a href="#origin" class="text-subdued hover:text-bone transition-colors duration-300">Origin</a>
+            <a href="#path" class="text-subdued hover:text-bone transition-colors duration-300">Path</a>
+            <a href="#philosophy" class="text-subdued hover:text-bone transition-colors duration-300">Philosophy</a>
+            <a href="#role" class="text-subdued hover:text-bone transition-colors duration-300">Role</a>
+        </div>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <section class="relative z-10 w-full min-h-screen flex items-center justify-center px-6 py-32 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+            
+            <!-- Portrait — same treatment as landing page -->
+            <div class="relative w-full max-w-md mx-auto lg:mx-0 aspect-[3/4] bg-[#111] border border-subdued/20 rounded-sm overflow-hidden scroll-fade group">
+                <img src="maxime-portrait.jfif" class="absolute inset-0 w-full h-full object-cover grayscale opacity-90 mix-blend-luminosity z-10 transition-opacity duration-1000 group-hover:opacity-100" alt="Maxime Fréchet">
+                
+                <div class="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNCkiLz48L3N2Zz4=')] opacity-50"></div>
+                    <div id="scan-line-blue" class="absolute top-[30%] left-0 w-full h-[1px] bg-[#3A86FF]/60 shadow-[0_0_8px_#3A86FF] transition-opacity duration-700 opacity-50 group-hover:opacity-100"></div>
+                    <div class="absolute top-[10%] bottom-[10%] left-[35%] w-[1px] bg-[#FF0033]/40 shadow-[0_0_8px_#FF0033] transition-opacity duration-700 opacity-50 group-hover:opacity-100"></div>
+                </div>
+                
+                <div class="absolute bottom-6 left-6 z-30 text-left">
+                    <p class="text-xs tracking-[0.2em] text-subdued uppercase mb-1">Founder & Practitioner</p>
+                    <p class="text-sm font-semibold text-bone tracking-wide">Maxime Fréchet</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col text-left">
+                <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                    The Architect
+                </h2>
+                <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-2 scroll-fade">
+                    Maxime Fréchet
+                </h3>
+                <p class="text-subdued text-xs md:text-sm uppercase tracking-[0.15em] font-semibold mb-8 scroll-fade">
+                    Holistic Architect of Human Potential
+                </p>
+                <p class="text-subdued text-base md:text-lg leading-relaxed mb-6 scroll-fade">
+                    His work exists at the intersection of science, performance, and inner transformation. His path is not defined by a single discipline, but by two decades spent understanding, embodying, and integrating the full spectrum of human potential.
+                </p>
+                <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                    His international path, across Europe, Oceania, and Asia, has shaped a singular perspective: one that refuses to separate disciplines that were never meant to be divided.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── ORIGIN: THE SCIENTIFIC FOUNDATION ── -->
+    <section id="origin" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            The Origin
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            It began inside the cell.
+        </h3>
+        <div class="text-left w-full space-y-6">
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Born in Lyon, France, Maxime earned a Master of Science in Integrative Biology & Physiology from the Sorbonne in Paris and conducted clinical research on cardiovascular health at Cochin Hospital. This scientific foundation is not a footnote. It is the bedrock. Every protocol, every assessment, every coaching decision he makes today is anchored in the rigour of someone who has studied the human body at its most fundamental level.
+            </p>
+            <p class="text-bone text-lg md:text-xl font-semibold leading-relaxed scroll-fade">
+                But understanding was never enough.
+            </p>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                During these same years, two parallel practices quietly reshaped everything. Through inner martial arts and meditation, he discovered that true understanding does not narrow. It flows between disciplines, between body and mind, between the seen and the unseen.
+            </p>
+        </div>
+    </section>
+
+    <!-- ── PATH: THE GLOBAL IMMERSION ── -->
+    <section id="path" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            The Path
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            From laboratory to the world.
+        </h3>
+        <div class="text-left w-full space-y-6">
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Driven by the need to embody what he studied, Maxime left the laboratory and crossed the globe: Australia, Germany, New Zealand. Immersing himself in elite coaching environments, rapidly becoming a top-performing trainer. Known for his energy, leadership, and ability to create deep trust, he was recognized early as both a high-level performer and a catalyst for others' transformation.
+            </p>
+            <p class="text-bone text-lg md:text-xl font-semibold leading-relaxed scroll-fade">
+                Yet performance, in isolation, revealed its limits.
+            </p>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                This realisation led him further, where he dedicated years to yogic sciences, meditation, naturopathy, cellular detoxification and fasting, as well as neuro-linguistic programming. There, he expanded his lens beyond physiology into the domains of energy, emotion, and consciousness. He learned to read the nervous system not as data, but as a living intelligence, one that carries the psychological friction, the emotional weight, and the energetic debt that no wearable will ever quantify.
+            </p>
+            <p class="text-bone text-lg md:text-xl font-semibold leading-relaxed scroll-fade">
+                This is the layer most high-performance practitioners ignore.<br>Maxime built an entire discipline around it.
+            </p>
+        </div>
+
+        <!-- Journey markers -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-16 border-t border-subdued/20 pt-8">
+            <div class="scroll-fade">
+                <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Europe</p>
+                <p class="text-bone text-sm">France · Germany · Switzerland</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Oceania</p>
+                <p class="text-bone text-sm">Australia · New Zealand</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-subdued text-xs tracking-[0.15em] uppercase font-semibold mb-1">Asia</p>
+                <p class="text-bone text-sm">India · Nepal</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── TODAY ── -->
+    <section class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            Today
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            Geneva. Independent practice.<br>A system built from experience.
+        </h3>
+        <div class="text-left w-full space-y-6">
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Today, based in Geneva, Maxime operates as an independent performance architect, working with executives, entrepreneurs, and modern athletes. His methodology bridges advanced sports science (VO₂max testing, strength diagnostics, structural assessment) with deeper frameworks of nervous system regulation, mental clarity, and sustainable high performance.
+            </p>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                He co-founded Manakin Digital, exploring how sustainability enhances business value, and created MANA³: a coherence system that fuses elite in-person coaching with continuous physiological intelligence.
+            </p>
+        </div>
+    </section>
+
+    <!-- ── PHILOSOPHY ── -->
+    <section id="philosophy" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            Philosophy
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            A philosophy for modern<br>high performers.
+        </h3>
+        <div class="text-left w-full space-y-6 mb-16">
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Maxime's work is built on a simple but powerful premise: peak performance is not achieved through intensity alone. It is achieved through coherence. He bridges science and intuition. Performance and recovery. Discipline and awareness. Business success and personal alignment.
+            </p>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                For his clients, this translates into more than results. It creates clarity, resilience, and sustainable excellence, in both professional and personal arenas.
+            </p>
+        </div>
+
+        <!-- Pillars -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full text-left">
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-manaBlue mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">Science & Intuition</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Western rigour and Eastern depth. Clinical research and embodied practice. Both inform every decision.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-manaYellow mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">Performance & Recovery</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Output without renewal is depletion. The system must sustain what it creates.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-manaGreen mb-6"></div>
+                <h4 class="text-bone font-bold text-xl mb-3">Discipline & Awareness</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Structure without consciousness is mechanical. Awareness without structure is drift. Both are required.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── THE ROLE ── -->
+    <section id="role" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            The Role
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            More than a trainer.
+        </h3>
+        <div class="text-left w-full space-y-6 mb-16">
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                He is a catalyst, someone who accelerates transformation. And above all, an architect of human potential, designing systems that allow individuals to perform, lead, and live at their highest level.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full text-center">
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">→</p>
+                <p class="text-bone font-bold text-lg mb-2">Catalyst</p>
+                <p class="text-subdued text-sm leading-relaxed">Accelerates transformation through precise, calibrated intervention.</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">⇌</p>
+                <p class="text-bone font-bold text-lg mb-2">Bridge-Builder</p>
+                <p class="text-subdued text-sm leading-relaxed">Connects science and intuition, structure and flow, measurement and meaning.</p>
+            </div>
+            <div class="scroll-fade">
+                <p class="text-bone text-5xl font-extrabold mb-4">◇</p>
+                <p class="text-bone font-bold text-lg mb-2">Architect</p>
+                <p class="text-subdued text-sm leading-relaxed">Designs systems for individuals to perform, lead, and live at their highest level.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FOR THOSE WHO LEAD ── -->
+    <section class="relative z-10 w-full flex flex-col items-center text-center px-6 py-32 max-w-4xl mx-auto pointer-events-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            For Those Who Lead
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-12 text-center scroll-fade">
+            The ceiling of volume.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-8 max-w-2xl scroll-fade">
+            MANA³ is built for individuals who understand that success without alignment is fragile. The defining metric of long-term dominance is not who can generate the most force, but who wastes the least amount of energy doing so. When your physiological fields stop competing for resources, true capacity emerges.
+        </p>
+        <p class="text-bone font-bold text-2xl md:text-3xl mb-4 scroll-fade">
+            At the highest level,<br>performance is no longer about doing more.
+        </p>
+        <p class="text-bone font-bold text-2xl md:text-3xl mb-12 scroll-fade uppercase tracking-wide">
+            It is about achieving sustained coherence.
+        </p>
+
+        <!-- Closing quote -->
+        <div class="border-t border-b border-subdued/20 py-8 max-w-2xl mb-16 scroll-fade">
+            <p class="text-subdued text-base md:text-lg italic leading-relaxed">
+                "Performance is the visible expression of invisible coherence.<br>
+                Longevity is coherence sustained over time."
+            </p>
+        </div>
+
+        <div class="flex flex-col items-center gap-4 scroll-fade">
+            <a href="https://wa.me/33769685963?text=Hi%20Maxime%2C%20I'd%20like%20to%20learn%20more%20about%20working%20with%20you." class="inline-block px-10 py-5 bg-bone text-ink font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_30px_rgba(245,245,240,0.15)]">
+                Start a Conversation
+            </a>
+            <a href="index.html" class="text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1 mt-4">
+                ← Back to main page
+            </a>
+        </div>
+    </section>
+
+    <footer class="relative z-10 w-full bg-white/[0.03] backdrop-blur-lg border-t border-subdued/20 px-6 py-16 pointer-events-auto mt-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+            <div>
+                <h4 class="text-bone text-2xl font-semibold tracking-tight mb-2">MANA³</h4>
+                <p class="text-subdued text-sm">&copy; 2026. All rights reserved.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-12 sm:gap-24">
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Explore</p>
+                    <a href="index.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">Home</a>
+                    <a href="deep-dive.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">The Science</a>
+                    <a href="privacy.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300">Privacy Policy</a>
+                </div>
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Contact</p>
+                    <p class="text-subdued text-sm mb-1">Get in touch</p>
+                    <a href="mailto:maxime-frechet@mana-cubed.com" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">maxime-frechet@mana-cubed.com</a>
+                    <p class="text-subdued text-sm">Geneva, Switzerland</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script>
+    // --- AMBIENT 3D PARTICLE FIELD ---
+    // Same as deep-dive: drifting particles with scroll parallax, same color palette
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2('#0A0A0A', 0.035);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.z = 15;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    function createGlowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.7)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    const particleTexture = createGlowTexture();
+    const particleCount = 4000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const speeds = new Float32Array(particleCount);
+
+    const subduedColor = new THREE.Color('#F5F5F0').multiplyScalar(0.5);
+    const signals = [new THREE.Color('#3A86FF'), new THREE.Color('#FFD60A'), new THREE.Color('#FF0033'), new THREE.Color('#38B000')];
+
+    for (let i = 0; i < particleCount; i++) {
+        positions[i*3]     = (Math.random() - 0.5) * 40;
+        positions[i*3 + 1] = (Math.random() - 0.5) * 80;
+        positions[i*3 + 2] = (Math.random() - 0.5) * 30;
+        speeds[i] = Math.random() * 0.004 + 0.001;
+
+        if (Math.random() > 0.82) {
+            const c = signals[Math.floor(Math.random() * 4)];
+            colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+        } else {
+            colors[i*3] = subduedColor.r; colors[i*3+1] = subduedColor.g; colors[i*3+2] = subduedColor.b;
+        }
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        size: 0.12,
+        map: particleTexture,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+    });
+
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.pageYOffset; });
+
+    const clock = new THREE.Clock();
+    function animate() {
+        requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+
+        const posArray = particles.geometry.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            posArray[i*3 + 1] += speeds[i];
+            if (posArray[i*3 + 1] > 40) posArray[i*3 + 1] = -40;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+        particles.rotation.y = time * 0.015;
+
+        camera.position.y = -(scrollY * 0.003);
+        camera.lookAt(0, -(scrollY * 0.003), 0);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- GSAP SCROLL ANIMATIONS ---
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('.scroll-fade').forEach(element => {
+        gsap.fromTo(element,
+            { y: 40, opacity: 0, filter: "blur(10px)" },
+            { y: 0, opacity: 1, filter: "blur(0px)", duration: 1.2, ease: "power3.out",
+              scrollTrigger: { trigger: element, start: "top 85%", toggleActions: "play none none reverse" } }
+        );
+    });
+    </script>
+</body>
+</html>
