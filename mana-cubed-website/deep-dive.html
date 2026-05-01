@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANA³ | The Science of Coherence</title>
+    <meta name="description" content="How MANA³ measures physiological coherence across 12 fields, 4 layers, and 66 relational pairs. The full architecture.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0A0A0A',
+                        bone: '#F5F5F0',
+                        subdued: '#888888',
+                        manaBlue: '#3A86FF',
+                        manaYellow: '#FFD60A',
+                        manaRed: '#FF0033',
+                        manaGreen: '#38B000'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; background-color: #0A0A0A; }
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        #canvas-container { pointer-events: none; }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden bg-ink">
+
+    <div id="canvas-container" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"></div>
+
+    <nav class="fixed top-6 right-6 z-50 hidden md:block pointer-events-none">
+        <div class="flex gap-6 text-xs font-semibold tracking-widest uppercase pointer-events-auto bg-ink/40 backdrop-blur-md px-8 py-4 rounded-full border border-subdued/20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <a href="index.html" class="text-bone hover:text-manaBlue transition-colors duration-300">← Home</a>
+            <span class="text-subdued/30">|</span>
+            <a href="#premise" class="text-subdued hover:text-bone transition-colors duration-300">Premise</a>
+            <a href="#fields" class="text-subdued hover:text-bone transition-colors duration-300">Fields</a>
+            <a href="#relational" class="text-subdued hover:text-bone transition-colors duration-300">Relational</a>
+            <a href="#intelligence" class="text-subdued hover:text-bone transition-colors duration-300">Intelligence</a>
+        </div>
+    </nav>
+
+    <section id="header" class="relative z-10 w-full min-h-[70vh] flex flex-col items-center justify-center text-center px-6 pt-32 pb-20 max-w-5xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+            The Science
+        </h2>
+        <h1 class="text-bone text-4xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            Performance emerges from<br>
+            <span class="text-subdued inline-block">invisible coherence.</span>
+        </h1>
+        <p class="text-subdued text-base md:text-lg max-w-2xl mx-auto leading-relaxed scroll-fade">
+            MANA³ is built on a single premise: the relationships between your body's systems carry more diagnostic information than any individual metric. This page explains how we measure that.
+        </p>
+    </section>
+
+    <section id="premise" class="relative z-10 w-full flex flex-col items-center justify-center text-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-8 scroll-fade">
+            01 / The Premise
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            The body is not a machine.<br>It is a symphony.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-6 scroll-fade max-w-3xl">
+            When an orchestra plays out of tune, you do not fix it by examining the violin in isolation. You listen to how the instruments relate to one another.
+        </p>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-6 scroll-fade max-w-3xl">
+            Every day, you gather data on your sleep, your movement, your stress. But without synthesis, that data is noise. A sleep score tells you how you slept. It does not tell you why your energy crashed at 3pm despite sleeping well, or why your shoulder tension returns every Thursday, or why your recovery scores are excellent but you still feel flat.
+        </p>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-12 scroll-fade max-w-3xl">
+            The answer is almost never in the metric itself. It's in the relationship between metrics, in the expected versus actual coherence between your structural integrity and your autonomic regulation, between your metabolic output and your recovery architecture.
+        </p>
+        <div class="border-l-2 border-bone/30 pl-6 text-left max-w-2xl scroll-fade">
+            <p class="text-bone text-xl md:text-2xl font-bold leading-relaxed italic">
+                Longevity is the accumulation of coherence over time.
+            </p>
+        </div>
+    </section>
+
+    <section id="fields" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-7xl mx-auto">
+        <div class="max-w-4xl mx-auto text-center mb-20">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                02 / The 12 Fields
+            </h2>
+            <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                Twelve dimensions.<br>Four layers of physiology.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                Each field is not a fixed test. It is a conceptual container. New assessments, new wearable inputs, new measurement modalities all integrate into the field they belong to. The fields are stable. The instruments that feed them evolve.
+            </p>
+        </div>
+
+        <div class="w-full max-w-5xl mb-12">
+            <div class="flex items-center gap-4 mb-6 scroll-fade">
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold">Layer 01</p>
+                <div class="h-[1px] flex-grow bg-subdued/20"></div>
+                <p class="text-manaBlue text-sm font-bold tracking-wide uppercase">Structure</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaBlue/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F1</p>
+                    <p class="text-bone font-semibold mb-2">Mechanical Integrity</p>
+                    <p class="text-subdued text-sm leading-relaxed">How your body bears load. Joint stability, tissue quality, and the structural foundation everything else depends on.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaBlue/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F2</p>
+                    <p class="text-bone font-semibold mb-2">Structural Adaptability</p>
+                    <p class="text-subdued text-sm leading-relaxed">Your capacity to reorganise movement patterns. Mobility under complexity, not just range of motion.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaBlue/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F3</p>
+                    <p class="text-bone font-semibold mb-2">Gravitational Efficiency</p>
+                    <p class="text-subdued text-sm leading-relaxed">How efficiently you move through space. Posture as a dynamic system, not a static position.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-5xl mb-12">
+            <div class="flex items-center gap-4 mb-6 scroll-fade">
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold">Layer 02</p>
+                <div class="h-[1px] flex-grow bg-subdued/20"></div>
+                <p class="text-manaYellow text-sm font-bold tracking-wide uppercase">Electricity</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaYellow/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F4</p>
+                    <p class="text-bone font-semibold mb-2">Autonomic Balance</p>
+                    <p class="text-subdued text-sm leading-relaxed">The sympathetic-parasympathetic equilibrium. How your nervous system shifts between activation and recovery.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaYellow/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F5</p>
+                    <p class="text-bone font-semibold mb-2">Neural Signal Quality</p>
+                    <p class="text-subdued text-sm leading-relaxed">The fidelity of communication between brain and body. Motor control precision, reaction quality, neuromuscular efficiency.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaYellow/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F6</p>
+                    <p class="text-bone font-semibold mb-2">Interoceptive Coherence</p>
+                    <p class="text-subdued text-sm leading-relaxed">How accurately you perceive your own internal state. The bridge between objective data and subjective experience.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-5xl mb-12">
+            <div class="flex items-center gap-4 mb-6 scroll-fade">
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold">Layer 03</p>
+                <div class="h-[1px] flex-grow bg-subdued/20"></div>
+                <p class="text-manaRed text-sm font-bold tracking-wide uppercase">Energy</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaRed/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F7</p>
+                    <p class="text-bone font-semibold mb-2">Metabolic Efficiency</p>
+                    <p class="text-subdued text-sm leading-relaxed">Fuel utilisation and energy production. How effectively your body converts input into sustained output.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaRed/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F8</p>
+                    <p class="text-bone font-semibold mb-2">Hormonal Coherence</p>
+                    <p class="text-subdued text-sm leading-relaxed">The endocrine rhythm. Cortisol, testosterone, thyroid, not as isolated numbers, but as a coordinated regulatory system.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaRed/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F9</p>
+                    <p class="text-bone font-semibold mb-2">Cellular Vitality</p>
+                    <p class="text-subdued text-sm leading-relaxed">The foundational capacity of your cells to produce energy, repair, and regenerate. Where longevity lives.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-5xl">
+            <div class="flex items-center gap-4 mb-6 scroll-fade">
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold">Layer 04</p>
+                <div class="h-[1px] flex-grow bg-subdued/20"></div>
+                <p class="text-manaGreen text-sm font-bold tracking-wide uppercase">Regulation</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaGreen/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F10</p>
+                    <p class="text-bone font-semibold mb-2">Recovery Architecture</p>
+                    <p class="text-subdued text-sm leading-relaxed">How your body rebuilds after stress. Sleep architecture, parasympathetic rebound, tissue repair sequencing.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaGreen/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F11</p>
+                    <p class="text-bone font-semibold mb-2">Stress Resilience</p>
+                    <p class="text-subdued text-sm leading-relaxed">Your system's capacity to absorb perturbation without losing coherence. Not the absence of stress, but the quality of response to it.</p>
+                </div>
+                <div class="bg-ink/60 border border-subdued/10 p-6 rounded-xl scroll-fade hover:border-manaGreen/30 transition-colors duration-300">
+                    <p class="text-subdued text-xs tracking-widest mb-2">F12</p>
+                    <p class="text-bone font-semibold mb-2">Adaptive Intelligence</p>
+                    <p class="text-subdued text-sm leading-relaxed">The meta-capacity. How your entire system learns, recalibrates, and evolves its own regulatory strategies over time.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="data" class="relative z-10 w-full flex flex-col items-center text-center px-6 py-32 max-w-6xl mx-auto pointer-events-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+            03 / The Data Architecture
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            Three tiers of intelligence.<br>One coherent score.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-16 max-w-3xl scroll-fade">
+            MANA³ doesn't rely on a single data source. Each field is fed by up to three tiers of input, each carrying different weight and confidence. The system knows what it knows, and what it doesn't.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl text-left">
+            <div class="bg-ink/60 border border-subdued/10 p-8 rounded-xl scroll-fade">
+                <p class="text-bone text-xs font-bold tracking-[0.2em] uppercase mb-4">Tier 1</p>
+                <p class="text-bone font-semibold text-lg mb-3">Practitioner Assessments</p>
+                <p class="text-subdued text-sm leading-relaxed">In-person structural, movement, and nervous system evaluations. Highest confidence. The observations no wearable can make.</p>
+            </div>
+            <div class="bg-ink/60 border border-subdued/10 p-8 rounded-xl scroll-fade">
+                <p class="text-bone text-xs font-bold tracking-[0.2em] uppercase mb-4">Tier 2</p>
+                <p class="text-bone font-semibold text-lg mb-3">Wearable Biometrics</p>
+                <p class="text-subdued text-sm leading-relaxed">Continuous data from your device: sleep, HRV, activity, stress. Normalised and device-agnostic. MANA³ reads trajectory, never absolute values.</p>
+            </div>
+            <div class="bg-ink/60 border border-subdued/10 p-8 rounded-xl scroll-fade">
+                <p class="text-bone text-xs font-bold tracking-[0.2em] uppercase mb-4">Tier 3</p>
+                <p class="text-bone font-semibold text-lg mb-3">Subjective Check-ins</p>
+                <p class="text-subdued text-sm leading-relaxed">Your daily 60-second voice note and 7-slider morning check-in. The subjective layer that gives context to everything else.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="relational" class="relative z-10 w-full flex flex-col items-center text-center px-6 py-32 max-w-4xl mx-auto">
+        <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+            04 / The Relational Matrix
+        </h2>
+        <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+            The signal is in<br>the relationships.
+        </h3>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-6 max-w-3xl scroll-fade">
+            12 fields produce 66 unique pairs. Each pair has an expected covariance, a statistical relationship that holds when the system is coherent.
+        </p>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-6 max-w-3xl scroll-fade">
+            When your Autonomic Balance drops but your Recovery Architecture holds steady, that tells a different story than when both drop together. When your Metabolic Efficiency rises while your Stress Resilience falls, that pattern has a name and a response.
+        </p>
+        <p class="text-subdued text-base md:text-lg leading-relaxed mb-16 max-w-3xl scroll-fade">
+            MANA³ tracks these relationships continuously. Not as static snapshots, but as oscillating patterns that evolve over days and weeks. The system learns your signature, the unique way your body's fields interact under different conditions.
+        </p>
+        <div class="flex items-baseline gap-6 scroll-fade">
+            <p class="text-bone text-7xl md:text-8xl font-extrabold tracking-tight">66</p>
+            <p class="text-subdued text-base text-left max-w-sm leading-relaxed">
+                unique field pairs, each with an expected covariance. Deviations from expected relationships are where the diagnostic signal lives.
+            </p>
+        </div>
+    </section>
+
+    <section id="intelligence" class="relative z-10 w-full flex flex-col items-center px-6 py-32 max-w-6xl mx-auto pointer-events-auto">
+        <div class="max-w-4xl mx-auto text-center mb-20">
+            <h2 class="text-subdued text-xs md:text-sm uppercase tracking-[0.25em] font-semibold mb-6 scroll-fade">
+                05 / The Intelligence Layers
+            </h2>
+            <h3 class="text-bone text-3xl md:text-5xl font-bold leading-tight tracking-tight mb-8 scroll-fade">
+                Three temporal layers.<br>One continuous synthesis.
+            </h3>
+            <p class="text-subdued text-base md:text-lg leading-relaxed scroll-fade">
+                MANA³ operates across three time horizons. Each produces a different kind of insight. Together, they build a picture that deepens with every day of data.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl text-left">
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold mb-3">Daily</p>
+                <h4 class="text-bone font-bold text-xl mb-3">The Observation</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Every morning, the system cross-references your overnight biometrics with your subjective check-in and recent trajectory. The result is a single, precise observation, not generic advice, but a reading of your specific state today in the context of your last 72 hours.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold mb-3">Weekly</p>
+                <h4 class="text-bone font-bold text-xl mb-3">Oscillation Analysis</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Physiology is not linear; it oscillates. Each week, the system analyses how your 12 fields have moved in relation to each other, identifying emerging patterns, compensations, and the gap between energetic expenditure and autonomic recovery.
+                </p>
+            </div>
+            <div class="scroll-fade">
+                <div class="w-8 h-[1px] bg-bone mb-6"></div>
+                <p class="text-subdued text-xs tracking-widest uppercase font-semibold mb-3">Longitudinal</p>
+                <h4 class="text-bone font-bold text-xl mb-3">Archetype Classification</h4>
+                <p class="text-subdued text-sm leading-relaxed">
+                    Over months, MANA³ learns your unique physiological archetype, your characteristic compensation patterns, your strongest and weakest couplings, your system's signature response to stress. This is where the system becomes genuinely predictive.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="relative z-10 w-full flex flex-col items-center text-center px-6 py-32 max-w-4xl mx-auto pointer-events-auto">
+        <p class="text-subdued text-lg italic mb-4 scroll-fade">
+            The architecture exists. The measurement runs daily.
+        </p>
+        <p class="text-bone font-bold text-2xl md:text-3xl mb-12 scroll-fade">
+            The question is whether you want to see<br>what it reveals about your system.
+        </p>
+        <div class="flex flex-col items-center gap-4 scroll-fade">
+            <a href="https://wa.me/33769685963?text=Hi%20Maxime%2C%20I've%20read%20the%20deep%20dive.%20I'd%20like%20to%20learn%20more." class="inline-block px-10 py-5 bg-bone text-ink font-bold rounded-full transition-transform hover:scale-105 duration-500 ease-out shadow-[0_0_30px_rgba(245,245,240,0.15)]">
+                Start a Conversation
+            </a>
+            <a href="index.html" class="text-subdued hover:text-bone text-sm transition-colors duration-300 border-b border-transparent hover:border-bone pb-1 mt-4">
+                ← Back to main page
+            </a>
+        </div>
+    </section>
+
+    <footer class="relative z-10 w-full bg-white/[0.03] backdrop-blur-lg border-t border-subdued/20 px-6 py-16 pointer-events-auto mt-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+            <div>
+                <h4 class="text-bone text-2xl font-semibold tracking-tight mb-2">MANA³</h4>
+                <p class="text-subdued text-sm">&copy; 2026. All rights reserved.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-12 sm:gap-24">
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Legal</p>
+                    <a href="privacy.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">Privacy Policy</a>
+                    <a href="index.html" class="text-subdued text-sm hover:text-bone transition-colors duration-300">Home</a>
+                </div>
+                <div class="flex flex-col">
+                    <p class="text-bone text-xs font-bold uppercase tracking-[0.2em] mb-4">Contact</p>
+                    <p class="text-subdued text-sm mb-1">Get in touch</p>
+                    <a href="mailto:maxime-frechet@mana-cubed.com" class="text-subdued text-sm hover:text-bone transition-colors duration-300 mb-1">maxime-frechet@mana-cubed.com</a>
+                    <p class="text-subdued text-sm">Geneva, Switzerland</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script>
+    // --- AMBIENT 3D PARTICLE FIELD ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2('#0A0A0A', 0.035);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.z = 15;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    function createGlowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.7)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    const particleTexture = createGlowTexture();
+    const particleCount = 4000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const speeds = new Float32Array(particleCount);
+
+    const subduedColor = new THREE.Color('#F5F5F0').multiplyScalar(0.5);
+    const signals = [new THREE.Color('#3A86FF'), new THREE.Color('#FFD60A'), new THREE.Color('#FF0033'), new THREE.Color('#38B000')];
+
+    for (let i = 0; i < particleCount; i++) {
+        positions[i*3]     = (Math.random() - 0.5) * 40;
+        positions[i*3 + 1] = (Math.random() - 0.5) * 80;
+        positions[i*3 + 2] = (Math.random() - 0.5) * 30;
+        speeds[i] = Math.random() * 0.004 + 0.001;
+
+        if (Math.random() > 0.82) {
+            const c = signals[Math.floor(Math.random() * 4)];
+            colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+        } else {
+            colors[i*3] = subduedColor.r; colors[i*3+1] = subduedColor.g; colors[i*3+2] = subduedColor.b;
+        }
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        size: 0.12,
+        map: particleTexture,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+    });
+
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.pageYOffset; });
+
+    const clock = new THREE.Clock();
+    function animate() {
+        requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+
+        const posArray = particles.geometry.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            posArray[i*3 + 1] += speeds[i];
+            if (posArray[i*3 + 1] > 40) posArray[i*3 + 1] = -40;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+        particles.rotation.y = time * 0.015;
+
+        camera.position.y = -(scrollY * 0.003);
+        camera.lookAt(0, -(scrollY * 0.003), 0);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- GSAP SCROLL ANIMATIONS ---
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('.scroll-fade').forEach(element => {
+        gsap.fromTo(element,
+            { y: 40, opacity: 0, filter: "blur(10px)" },
+            { y: 0, opacity: 1, filter: "blur(0px)", duration: 1.2, ease: "power3.out",
+              scrollTrigger: { trigger: element, start: "top 85%", toggleActions: "play none none reverse" } }
+        );
+    });
+    </script>
+</body>
+</html>
