@@ -327,6 +327,14 @@ def compute_archetype(request):
             "reasoning": " | ".join(reasoning_parts) if reasoning_parts else "Insufficient signal differentiation"
         }
 
+        # ── PRE-SERIALIZE FOR MAKE.COM ──
+        # Make cannot serialize parsed objects in template substitution ({{6.data}} → [object Object]).
+        # Pre-escape the JSON so {{6.data.profile_json_string}} is safe inside another JSON body.
+        profile_json = json.dumps(result, separators=(",", ":"))
+        if len(profile_json) > 1900:
+            profile_json = profile_json[:1900]
+        result["profile_json_string"] = profile_json.replace('"', '\\"')
+
         return (json.dumps(result), 200, headers)
 
     except Exception as e:
