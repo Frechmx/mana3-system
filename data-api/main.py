@@ -18,6 +18,14 @@ CLIENTS_DB = "e2bb9697-c7a5-4b9d-98be-8d93ac10cc64"
 PRACTITIONER_BRIEFS_DB = "a6423d30-8432-461e-9054-5b9f91e79133"
 STRAVA_TOKENS_DB = "350b52582f9c805689f1fcd5ce318116"
 
+# Session / anthropometric databases (progress endpoint)
+SESSIONS_DB = "37cb52582f9c80659efffd638696cb71"
+SESSION_SETS_DB = "37cb52582f9c800cada5f625527b0c88"
+ANTHROPOMETRICS_DB = "a98b52582f9c82e38a8c015a616f0174"
+
+# How many distinct sessions a lift must appear in to be trended
+MIN_SESSIONS_FOR_TREND = 2
+
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_API_KEY}",
     "Notion-Version": "2022-06-28",
@@ -764,6 +772,222 @@ def handle_weekly_brief(request, client_id, client_page_id, headers):
 
 
 # ═══════════════════════════════════════════════
+# PROGRESS ENDPOINT  (session / anthropometric trends)
+# ═══════════════════════════════════════════════
+
+def _range_to_days(range_param):
+    """Map a range string to a day count. None = all-time."""
+    if range_param == "30":
+        return 30
+    if range_param == "90":
+        return 90
+    return None  # all-time
+
+
+def query_anthropometrics(client_id):
+    """Fetch all anthropometric measurements for a client, oldest→newest.
+    Returns list of {date, weight_kg, height_cm}."""
+    body = {
+        "filter": {
+            "property": "client_id",
+            "rich_text": {"equals": client_id}
+        },
+        "sorts": [{"property": "date", "direction": "ascending"}],
+        "page_size": 100
+    }
+    resp = requests.post(
+        f"https://api.notion.com/v1/databases/{ANTHROPOMETRICS_DB}/query",
+        headers=NOTION_HEADERS, json=body
+    )
+    if resp.status_code != 200:
+        return []
+    out = []
+    for r in resp.json().get("results", []):
+        p = r.get("properties", {})
+        d = get_date(p.get("date"))
+        w = get_number(p.get("weight_kg"))
+        h = get_number(p.get("height_cm"))
+        if d:
+            out.append({"date": d, "weight_kg": w, "height_cm": h})
+    return out
+
+
+def weight_on_or_before(measurements, target_date):
+    """Most recent weight_kg dated on/before target_date. None if no prior measurement."""
+    chosen = None
+    for m in measurements:  # ascending
+        if m["date"] <= target_date and m.get("weight_kg"):
+            chosen = m["weight_kg"]
+        elif m["date"] > target_date:
+            break
+    return chosen
+
+
+def query_session_sets(client_id, since_date):
+    """Fetch Session Sets rows for a client (optionally since a date), paginated.
+    Returns list of extracted exercise rows."""
+    filt = {"property": "client_id", "rich_text": {"equals": client_id}}
+    if since_date:
+        filt = {"and": [filt, {"property": "date", "date": {"on_or_after": since_date}}]}
+
+    rows = []
+    cursor = None
+    for _ in range(10):  # safety cap: 10 pages × 100 = 1000 sets
+        body = {
+            "filter": filt,
+            "sorts": [{"property": "date", "direction": "ascending"}],
+            "page_size": 100
+        }
+        if cursor:
+            body["start_cursor"] = cursor
+        resp = requests.post(
+            f"https://api.notion.com/v1/databases/{SESSION_SETS_DB}/query",
+            headers=NOTION_HEADERS, json=body
+        )
+        if resp.status_code != 200:
+            break
+        data = resp.json()
+        for r in data.get("results", []):
+            p = r.get("properties", {})
+            rows.append({
+                "session_id": get_text(p.get("session_id")),
+                "date": get_date(p.get("date")),
+                "exercise_name": get_select(p.get("exercise_name")),
+                "mode": get_select(p.get("mode")),
+                "set_count": get_number(p.get("set_count")),
+                "tonnage_kg": get_number(p.get("tonnage_kg")),
+                "top_load_kg": get_number(p.get("top_load_kg")),
+                "best_mv": get_number(p.get("best_mv")),
+                "best_pp": get_number(p.get("best_pp")),
+                "sets_json": get_full_text(p.get("sets_json")),
+            })
+        if not data.get("has_more"):
+            break
+        cursor = data.get("next_cursor")
+    return rows
+
+
+def _mean_power_stats(sets_json):
+    """From a session's sets for one exercise, return (best_mp, avg_mp) where
+    mp = per-set MEAN power. W/kg is conventionally mean-power-based, so this is
+    the correct source — NOT best_pp (peak power), which is a separate metric."""
+    if not sets_json:
+        return None, None
+    try:
+        sets = json.loads(sets_json)
+    except Exception:
+        return None, None
+    mps = [s.get("mp") for s in sets if isinstance(s, dict) and s.get("mp") is not None]
+    if not mps:
+        return None, None
+    return max(mps), sum(mps) / len(mps)
+
+
+def _pct_delta(series):
+    """% change from first to last non-null value in a date-ordered series of {value}."""
+    vals = [pt["value"] for pt in series if pt.get("value") is not None]
+    if len(vals) < 2 or not vals[0]:
+        return None
+    return round((vals[-1] - vals[0]) / vals[0] * 100, 1)
+
+
+def handle_progress(request, client_id, client_page_id, headers):
+    """Per-lift strength/power/tonnage trends, bodyweight-normalised.
+    Query param: range = 30 | 90 | all (default 30)."""
+    range_param = (request.args.get("range") if request.method == "GET"
+                   else (request.get_json(silent=True) or {}).get("range")) or "30"
+    days = _range_to_days(range_param)
+    since = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d") if days else None
+
+    measurements = query_anthropometrics(client_id)
+    latest_weight = measurements[-1]["weight_kg"] if measurements else None
+    latest_height = next((m["height_cm"] for m in reversed(measurements)
+                          if m.get("height_cm")), None)
+
+    sets = query_session_sets(client_id, since)
+
+    # ---- session-level tonnage series (sum across all exercises per session) ----
+    sessions = {}  # session_id -> {date, tonnage}
+    for row in sets:
+        sid = row.get("session_id")
+        if not sid:
+            continue
+        s = sessions.setdefault(sid, {"date": row.get("date"), "tonnage": 0})
+        s["tonnage"] += row.get("tonnage_kg") or 0
+    tonnage_series = sorted(
+        [{"date": v["date"], "value": round(v["tonnage"])} for v in sessions.values()],
+        key=lambda x: x["date"] or ""
+    )
+
+    # ---- per-lift grouping ----
+    lifts = {}  # exercise_name -> list of per-session aggregates
+    for row in sets:
+        name = row.get("exercise_name")
+        if not name:
+            continue
+        bw = weight_on_or_before(measurements, row.get("date")) or latest_weight
+        best_mp, avg_mp = _mean_power_stats(row.get("sets_json"))  # MEAN power → W/kg
+        peak_pp = row.get("best_pp")        # PEAK power → its own trend
+        best_mv = row.get("best_mv")        # mean velocity
+        top_load = row.get("top_load_kg")
+
+        # bodyweight-normalised metrics (None-safe)
+        wkg_best = round(best_mp / bw, 2) if (best_mp and bw) else None
+        wkg_avg = round(avg_mp / bw, 2) if (avg_mp and bw) else None
+        rel_str = round(top_load / bw, 2) if (top_load and bw) else None
+
+        lifts.setdefault(name, []).append({
+            "session_id": row.get("session_id"),
+            "date": row.get("date"),
+            "best_mv": best_mv,
+            "best_mean_power_w": round(best_mp, 1) if best_mp else None,
+            "avg_mean_power_w": round(avg_mp, 1) if avg_mp else None,
+            "peak_power_w": peak_pp,
+            "top_load_kg": top_load,
+            "wkg_best": wkg_best,
+            "wkg_avg": wkg_avg,
+            "rel_strength_x_bw": rel_str,
+            "tonnage_kg": row.get("tonnage_kg"),
+        })
+
+    # keep lifts logged in >= MIN_SESSIONS_FOR_TREND sessions, build trend series
+    trends = []
+    for name, entries in lifts.items():
+        entries.sort(key=lambda x: x["date"] or "")
+        distinct_sessions = len({e["session_id"] for e in entries})
+        if distinct_sessions < MIN_SESSIONS_FOR_TREND:
+            continue
+        wkg_series = [{"date": e["date"], "value": e["wkg_best"]} for e in entries]
+        rel_series = [{"date": e["date"], "value": e["rel_strength_x_bw"]} for e in entries]
+        trends.append({
+            "exercise": name,
+            "sessions": distinct_sessions,
+            "series": entries,
+            "summary": {
+                "wkg_best_latest": entries[-1]["wkg_best"],
+                "wkg_best_delta_pct": _pct_delta(wkg_series),
+                "rel_strength_latest": entries[-1]["rel_strength_x_bw"],
+                "rel_strength_delta_pct": _pct_delta(rel_series),
+            },
+        })
+    trends.sort(key=lambda t: t["sessions"], reverse=True)
+
+    return (json.dumps({
+        "client_id": client_id,
+        "range": range_param,
+        "bodyweight_kg": latest_weight,
+        "height_cm": latest_height,
+        "has_weight_data": latest_weight is not None,
+        "session_count": len(sessions),
+        "tonnage_series": tonnage_series,
+        "tonnage_delta_pct": _pct_delta(tonnage_series),
+        "lifts": trends,
+        "note": None if trends else
+                "Not enough session data yet — lifts appear once logged in 2+ sessions.",
+    }), 200, headers)
+
+
+# ═══════════════════════════════════════════════
 # MAIN ENTRY POINT
 # ═══════════════════════════════════════════════
 
@@ -809,6 +1033,8 @@ def main(request):
 
         if endpoint == "weekly-brief":
             return handle_weekly_brief(request, client_id, client_page_id, headers)
+        elif endpoint == "progress":
+            return handle_progress(request, client_id, client_page_id, headers)
         else:
             return handle_daily(request, client_id, client_page_id, headers)
 
