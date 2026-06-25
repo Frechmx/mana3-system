@@ -210,6 +210,93 @@ async function submitPromptAnswer() {
   .nav-item.active { color: var(--manaBlue); }
   .nav-item.active svg { opacity: 1; fill: var(--manaBlue); }
 
+  /* ═══ PROGRESS TAB ═══ */
+  #view-progress { padding-bottom: 20px; }
+  #view-progress .num { font-family: 'JetBrains Mono'; font-variant-numeric: tabular-nums; }
+  .pg-vitals { color: var(--subdued); font-size: 13px; margin-bottom: 16px; }
+  .pg-vitals .num { color: var(--bone); }
+
+  .pg-range { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 3px; margin-bottom: 14px; }
+  .pg-range button { flex: 1; padding: 9px 0; border: none; background: none; color: var(--subdued); font-family: 'JetBrains Mono'; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all .12s; }
+  .pg-range button.on { background: var(--surface-heavy); color: var(--bone); }
+
+  .pg-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 4px; margin-bottom: 6px; display: grid; grid-template-columns: repeat(4,1fr); }
+  .pg-summary .cell { padding: 14px 8px; text-align: center; position: relative; }
+  .pg-summary .cell:not(:last-child)::after { content:''; position:absolute; right:0; top:22%; height:56%; width:1px; background:var(--border); }
+  .pg-summary .cv { font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 400; line-height: 1; }
+  .pg-summary .cv small { font-size: 11px; color: var(--subdued); }
+  .pg-summary .cl { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--subdued); margin-top: 6px; }
+  .pg-period { text-align: center; font-size: 10px; color: var(--subdued); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 20px; opacity: .7; }
+
+  .pg-sechead { display: flex; align-items: center; gap: 10px; margin: 24px 2px 12px; }
+  .pg-sechead h3 { font-size: 13px; font-weight: 600; color: var(--bone); }
+  .pg-sechead span { font-size: 11px; color: var(--subdued); margin-left: auto; }
+
+  .pg-selector { position: relative; margin-bottom: 14px; }
+  .pg-selbox { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px 14px; cursor: pointer; text-align: left; color: var(--bone); }
+  .pg-sellabel { flex: 1; font-size: 14px; font-weight: 500; }
+  .pg-selsub { font-size: 12px; color: var(--subdued); }
+  .pg-selchev { color: var(--subdued); font-size: 12px; transition: transform .18s; }
+  .pg-selector.open .pg-selchev { transform: rotate(180deg); }
+  .pg-selpanel { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20; background: #14141a; border: 1px solid var(--border); border-radius: 12px; padding: 6px; box-shadow: 0 12px 40px rgba(0,0,0,.6); max-height: 300px; overflow-y: auto; }
+  .pg-selector.open .pg-selpanel { display: block; }
+  .pg-selopt { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .pg-selopt:active { background: var(--surface-heavy); }
+  .pg-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--subdued); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .pg-selopt.on .pg-box { background: var(--manaBlue); border-color: var(--manaBlue); }
+  .pg-box svg { width: 11px; height: 11px; opacity: 0; }
+  .pg-selopt.on .pg-box svg { opacity: 1; }
+  .pg-optname { flex: 1; }
+  .pg-optmeta { font-size: 11px; color: var(--subdued); font-family: 'JetBrains Mono'; }
+  .pg-seldiv { height: 1px; background: var(--border); margin: 4px 6px; }
+
+  .pg-lift { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+  .pg-lifthead { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; width: 100%; border: none; background: none; text-align: left; color: var(--bone); }
+  .pg-liftname { font-size: 16px; font-weight: 600; flex: 1; }
+  .pg-liftglance { font-size: 13px; }
+  .pg-liftglance small { color: var(--subdued); font-size: 11px; }
+  .pg-gd { font-size: 11px; font-weight: 600; margin-left: 4px; }
+  .pg-gd.up { color: #38B000; } .pg-gd.down { color: var(--recording); } .pg-gd.flat { color: var(--subdued); }
+  .pg-chev { color: var(--subdued); font-size: 12px; transition: transform .18s; }
+  .pg-lift.open .pg-chev { transform: rotate(180deg); }
+  .pg-liftbody { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+  .pg-lift.open .pg-liftbody { display: block; }
+
+  .pg-metricrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .pg-metric { background: var(--surface-heavy); border-radius: 11px; padding: 12px 13px; }
+  .pg-ml { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--subdued); margin-bottom: 5px; }
+  .pg-mv { font-size: 22px; font-weight: 600; display: flex; align-items: baseline; gap: 5px; }
+  .pg-mv small { font-size: 12px; color: var(--subdued); }
+  .pg-md { font-size: 11px; font-weight: 600; margin-top: 3px; font-family: 'JetBrains Mono'; }
+  .pg-md.up { color: #38B000; } .pg-md.down { color: var(--recording); } .pg-md.flat { color: var(--subdued); }
+
+  .pg-chartlabel { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--subdued); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .pg-legend { display: flex; gap: 11px; }
+  .pg-legend span { display: flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; }
+  .pg-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .pg-svg { display: block; width: 100%; overflow: visible; }
+  .pg-diverge { font-size: 12px; color: var(--subdued); background: var(--surface-heavy); border-radius: 9px; padding: 9px 11px; margin-top: 14px; line-height: 1.5; }
+  .pg-diverge b { color: #FFD60A; font-weight: 600; }
+
+  .pg-tp { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 16px; margin-bottom: 10px; }
+  .pg-tphead { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }
+  .pg-tpname { font-size: 15px; font-weight: 600; flex: 1; }
+  .pg-pr { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: #FFD60A; border: 1px solid #FFD60A; border-radius: 99px; padding: 2px 9px; }
+  .pg-tpgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pg-tpl { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--subdued); margin-bottom: 7px; }
+  .pg-tprow { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .pg-tprecent { font-size: 19px; font-weight: 600; }
+  .pg-tprecent small { font-size: 11px; color: var(--subdued); }
+  .pg-tpceil { font-size: 12px; color: var(--subdued); font-family: 'JetBrains Mono'; }
+  .pg-tptrack { height: 5px; background: var(--surface-heavy); border-radius: 3px; overflow: hidden; }
+  .pg-tpfill { height: 100%; background: var(--manaBlue); border-radius: 3px; transition: width .4s; }
+  .pg-tpfill.full { background: #FFD60A; }
+  .pg-tppct { font-size: 10px; color: var(--subdued); margin-top: 5px; font-family: 'JetBrains Mono'; opacity: .7; }
+
+  .pg-state { background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 28px 20px; text-align: center; margin-bottom: 12px; }
+  .pg-state h3 { font-size: 15px; margin-bottom: 7px; color: var(--bone); }
+  .pg-state p { color: var(--subdued); font-size: 13px; max-width: 330px; margin: 0 auto; line-height: 1.5; }
+
 </style>
 </head>
 <body>
@@ -325,6 +412,12 @@ async function submitPromptAnswer() {
       </div>
     </div>
 
+    <div id="view-progress" class="view">
+      <div id="progress-content">
+        <div class="card"><p style="color: var(--subdued); font-size: 14px; text-align: center; padding: 20px 0;">Loading progress…</p></div>
+      </div>
+    </div>
+
   </div>
 
   <nav>
@@ -347,6 +440,10 @@ async function submitPromptAnswer() {
     <div class="nav-item" onclick="switchTab('weekly')">
       <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
       Weekly
+    </div>
+    <div class="nav-item" onclick="switchTab('progress')">
+      <svg viewBox="0 0 24 24"><path d="M3.5 18.5l6-6 4 4L22 6.92 20.59 5.5l-7.09 8-4-4L2 16.5z"/></svg>
+      Progress
     </div>
   </nav>
 
@@ -527,6 +624,7 @@ function switchTab(tabId) {
   if(tabId === 'checkin') checkState();
   if(tabId === 'today' || tabId === 'history') fetchAndRender();
   if(tabId === 'weekly') fetchWeeklyBrief();
+  if(tabId === 'progress') fetchProgress();
 }
 
 // ═══ NATIVE CHECK-IN SUBMISSION (Make.com S8 Pipeline) ═══
@@ -1051,6 +1149,7 @@ function switchTab(tabId) {
   if(tabId === 'checkin') checkState();
   if(tabId === 'today' || tabId === 'history') fetchAndRender();
   if(tabId === 'weekly') fetchWeeklyBrief();
+  if(tabId === 'progress') fetchProgress();
 }
 
 // ═══ PROMPT ANSWER SELECTION ═══
@@ -1091,6 +1190,227 @@ async function submitPromptAnswer() {
     btn.innerText = 'Error — Try Again';
     btn.disabled = false;
   }
+}
+
+
+// ═══ PROGRESS TAB ═══
+let progressRange = '30';
+let progressFilters = null;   // null = default (top lift); Set = chosen lifts
+let progressData = null;
+
+const PROG = {
+  fmt: n => n == null ? '—' : (typeof n === 'number' ? n.toLocaleString() : n),
+  dCls: d => d == null ? 'flat' : d > 0.5 ? 'up' : d < -0.5 ? 'down' : 'flat',
+  dTxt: d => d == null ? '—' : (d > 0 ? '+' : '') + d + '%',
+  shortDate: s => { if(!s) return ''; const p = s.split('-');
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parseInt(p[2]) + ' ' + M[parseInt(p[1]) - 1]; },
+  checkSvg: () => '<svg viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+async function fetchProgress() {
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  const host = document.getElementById('progress-content');
+  host.innerHTML = '<div class="card"><p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Loading progress…</p></div>';
+  try {
+    const res = await fetch(`${DATA_API}?client_id=${clientId}&endpoint=progress&range=${progressRange}`);
+    if (!res.ok) throw new Error('API error');
+    progressData = await res.json();
+    const lifts = progressData.lifts || [];
+    progressFilters = lifts.length ? new Set([lifts[0].exercise || lifts[0].name]) : null;
+    renderProgress();
+  } catch(e) {
+    host.innerHTML = '<div class="card"><p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load progress.</p></div>';
+  }
+}
+
+async function progressSetRange(r) {
+  progressRange = r;
+  await fetchProgress();
+}
+
+function renderProgress() {
+  const d = progressData;
+  const host = document.getElementById('progress-content');
+  if (!d.has_weight_data) {
+    host.innerHTML = `<div class="pg-state"><h3>Add a bodyweight measurement</h3>
+      <p>Power-to-weight and relative strength need a recorded weight. Log one in anthropometrics to unlock these trends.</p></div>`;
+    return;
+  }
+  const a = d.activity_summary || {};
+  let html = '';
+
+  // athlete vitals line
+  html += `<div class="pg-vitals"><span class="num">${d.bodyweight_kg}</span> kg · <span class="num">${d.height_cm||'—'}</span> cm</div>`;
+
+  // range toggle
+  html += `<div class="pg-range">
+    ${['30','90','all'].map(r=>`<button onclick="progressSetRange('${r}')" class="${r===progressRange?'on':''}">${r==='all'?'All time':r+' days'}</button>`).join('')}
+  </div>`;
+
+  // activity summary
+  html += `<div class="pg-summary">
+    <div class="cell"><div class="cv num">${a.days_active??0}</div><div class="cl">Days active</div></div>
+    <div class="cell"><div class="cv num">${a.sessions??0}</div><div class="cl">Sessions</div></div>
+    <div class="cell"><div class="cv num">${PROG.fmt(a.total_tonnage_kg)}<small> kg</small></div><div class="cl">Lifted</div></div>
+    <div class="cell"><div class="cv num">${a.exercise_count??0}</div><div class="cl">Exercises</div></div>
+  </div>
+  <div class="pg-period">${a.period || d.range_label || ''}</div>`;
+
+  // lift trends
+  const lifts = d.lifts || [];
+  html += `<div class="pg-sechead"><h3>Lift trends</h3><span>${lifts.length} tracked</span></div>`;
+
+  if (!lifts.length) {
+    html += `<div class="pg-state"><h3>No lift trends yet</h3>
+      <p>${d.note || 'Lifts appear here once logged in 2 or more sessions in this period.'}</p></div>`;
+  } else {
+    const sel = progressFilters;
+    const selCount = sel ? sel.size : lifts.length;
+    const selLabel = !sel ? 'All lifts' : sel.size === 1 ? [...sel][0] : `${sel.size} lifts selected`;
+    html += `<div class="pg-selector" id="pgSelector">
+      <button class="pg-selbox" onclick="progressToggleSelector(event)">
+        <span class="pg-sellabel">${selLabel}</span>
+        <span class="pg-selsub">${selCount} of ${lifts.length}</span>
+        <span class="pg-selchev">▾</span>
+      </button>
+      <div class="pg-selpanel">
+        <div class="pg-selopt ${!sel?'on':''}" onclick="progressPick(event,'__all')">
+          <span class="pg-box">${PROG.checkSvg()}</span><span class="pg-optname">All lifts</span></div>
+        <div class="pg-seldiv"></div>
+        ${lifts.map(l=>{const nm=l.exercise||l.name; const on=!sel||sel.has(nm);
+          return `<div class="pg-selopt ${on?'on':''}" onclick="progressPick(event,'${nm.replace(/'/g,"\\'")}')">
+            <span class="pg-box">${PROG.checkSvg()}</span><span class="pg-optname">${nm}</span>
+            <span class="pg-optmeta">${l.sessions} sessions</span></div>`;}).join('')}
+      </div>
+    </div>`;
+
+    let firstShown = true;
+    lifts.forEach(lift => {
+      const nm = lift.exercise || lift.name;
+      if (progressFilters && !progressFilters.has(nm)) return;
+      html += progressLiftCard(lift, firstShown);
+      firstShown = false;
+    });
+  }
+
+  // top performance
+  const tp = d.top_performance || [];
+  html += `<div class="pg-sechead"><h3>Top performance</h3><span>recent vs all-time</span></div>`;
+  if (!tp.length) {
+    html += `<div class="pg-state"><h3>No personal records yet</h3>
+      <p>Once a lift has 2+ sessions, its best efforts show here against your all-time ceiling.</p></div>`;
+  } else {
+    const allAt = tp.every(t => t.wkg.pct_of_ceiling === 100 && t.rel_strength.pct_of_ceiling === 100);
+    if (allAt) {
+      html += `<div class="pg-state" style="text-align:left;padding:14px 16px;margin-bottom:12px">
+        <p style="margin:0">You're still building your baseline — every lift here is at its best so far. Once you have history beyond 30 days, this shows how close recent efforts sit to your ceiling.</p></div>`;
+    }
+    tp.forEach(t => html += progressTpCard(t));
+  }
+
+  host.innerHTML = html;
+}
+
+function progressLiftCard(lift, open) {
+  const nm = lift.exercise || lift.name;
+  const s = lift.summary, series = lift.series, n = series.length;
+  let div = '';
+  const rs = s.rel_strength_delta_pct, wk = s.wkg_best_delta_pct;
+  if (rs!=null && wk!=null && ((rs>1&&wk<-1)||(rs<-1&&wk>1))) {
+    div = `<div class="pg-diverge">${ rs>0
+      ? `Load is up (<b>+${rs}% ×BW</b>) but power-to-weight dropped (<b>${wk}% W/kg</b>) — heavier, but slower.`
+      : `Power-to-weight is up (<b>+${wk}% W/kg</b>) while load eased (<b>${rs}% ×BW</b>) — faster at lighter load.`}</div>`;
+  }
+  return `<div class="pg-lift ${open?'open':''}">
+    <button class="pg-lifthead" onclick="this.parentElement.classList.toggle('open')">
+      <span class="pg-liftname">${nm}</span>
+      <span class="pg-liftglance num">${PROG.fmt(s.wkg_best_latest)}<small> W/kg</small>
+        <span class="pg-gd ${PROG.dCls(s.wkg_best_delta_pct)}">${PROG.dTxt(s.wkg_best_delta_pct)}</span></span>
+      <span class="pg-chev">▾</span>
+    </button>
+    <div class="pg-liftbody">
+      <div class="pg-metricrow">
+        <div class="pg-metric"><div class="pg-ml">Power-to-weight</div>
+          <div class="pg-mv num">${PROG.fmt(s.wkg_best_latest)} <small>W/kg</small></div>
+          <div class="pg-md ${PROG.dCls(s.wkg_best_delta_pct)}">${PROG.dTxt(s.wkg_best_delta_pct)}</div></div>
+        <div class="pg-metric"><div class="pg-ml">Relative strength</div>
+          <div class="pg-mv num">${PROG.fmt(s.rel_strength_latest)}<small>× BW</small></div>
+          <div class="pg-md ${PROG.dCls(s.rel_strength_delta_pct)}">${PROG.dTxt(s.rel_strength_delta_pct)}</div></div>
+      </div>
+      <div class="pg-chartlabel"><span>W/kg per session</span>
+        <span class="pg-legend"><span><i style="background:var(--manaBlue)"></i>best</span><span><i style="background:var(--subdued)"></i>avg</span></span></div>
+      ${progressSparkline(series.map((e,i)=>({x:i,best:e.wkg_best,avg:e.wkg_avg,label:PROG.shortDate(e.date)})),
+        [{key:'best',color:'var(--manaBlue)'},{key:'avg',color:'var(--subdued)'}], n)}
+      ${div}
+    </div>
+  </div>`;
+}
+
+function progressTpCard(t) {
+  const isPr = t.wkg.is_pr || t.rel_strength.is_pr;
+  const cell = (label, m, unit) => {
+    const pct = m.pct_of_ceiling;
+    return `<div class="pg-tpcell"><div class="pg-tpl">${label}</div>
+      <div class="pg-tprow"><span class="pg-tprecent num">${PROG.fmt(m.recent_best)}<small>${unit}</small></span>
+        <span class="pg-tpceil">ceiling ${PROG.fmt(m.all_time_best)}</span></div>
+      <div class="pg-tptrack"><div class="pg-tpfill ${pct>=100?'full':''}" style="width:${pct||0}%"></div></div>
+      <div class="pg-tppct">${pct!=null?pct+'% of best':'—'}</div></div>`;
+  };
+  return `<div class="pg-tp"><div class="pg-tphead"><span class="pg-tpname">${t.exercise}</span>
+    ${isPr?'<span class="pg-pr">PR</span>':''}</div>
+    <div class="pg-tpgrid">${cell('Power-to-weight', t.wkg, ' W/kg')}${cell('Relative strength', t.rel_strength, '× BW')}</div></div>`;
+}
+
+function progressToggleSelector(e) {
+  e.stopPropagation();
+  document.getElementById('pgSelector').classList.toggle('open');
+}
+
+function progressPick(e, f) {
+  e.stopPropagation();
+  const lifts = progressData.lifts || [];
+  if (f === '__all') {
+    progressFilters = null;
+  } else {
+    if (!progressFilters) progressFilters = new Set(lifts.map(l => l.exercise || l.name));
+    if (progressFilters.has(f)) progressFilters.delete(f); else progressFilters.add(f);
+    if (progressFilters.size === 0) progressFilters = new Set([lifts[0].exercise || lifts[0].name]);
+    else if (progressFilters.size === lifts.length) progressFilters = null;
+  }
+  renderProgress();
+  const s = document.getElementById('pgSelector');
+  if (s) s.classList.add('open');
+}
+
+document.addEventListener('click', () => {
+  const s = document.getElementById('pgSelector');
+  if (s) s.classList.remove('open');
+});
+
+function progressSparkline(pts, lines, n) {
+  if (!pts.length) return '';
+  const W=620,H=110,padL=8,padR=8,padT=12,padB=22;
+  const allY=[]; lines.forEach(l=>pts.forEach(p=>{if(p[l.key]!=null)allY.push(p[l.key]);}));
+  if (!allY.length) return '<div style="color:var(--subdued);font-size:12px;padding:8px 0">No data for this metric.</div>';
+  let minY=Math.min(...allY),maxY=Math.max(...allY);
+  if(minY===maxY){minY-=1;maxY+=1;}
+  const pad=(maxY-minY)*0.15; minY-=pad; maxY+=pad;
+  const maxX=Math.max(1,n-1);
+  const sx=x=>padL+(x/maxX)*(W-padL-padR);
+  const sy=y=>padT+(1-(y-minY)/(maxY-minY))*(H-padT-padB);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="pg-svg">`;
+  [0,0.5,1].forEach(f=>{const y=padT+f*(H-padT-padB);
+    svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;});
+  lines.forEach(l=>{
+    const lp=pts.filter(p=>p[l.key]!=null); if(!lp.length) return;
+    const dp=lp.map((p,i)=>`${i?'L':'M'}${sx(p.x).toFixed(1)},${sy(p[l.key]).toFixed(1)}`).join(' ');
+    const dash=l.key==='avg'?'stroke-dasharray="4 4"':'';
+    svg+=`<path d="${dp}" fill="none" stroke="${l.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" ${dash}/>`;
+    lp.forEach(p=>{svg+=`<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p[l.key]).toFixed(1)}" r="3" fill="${l.color}"/>`;});
+  });
+  pts.forEach(p=>{svg+=`<text x="${sx(p.x).toFixed(1)}" y="${H-6}" text-anchor="middle" fill="var(--subdued)" style="font-family:'JetBrains Mono';font-size:9px">${p.label||''}</text>`;});
+  svg+=`</svg>`; return svg;
 }
 
 </script>
