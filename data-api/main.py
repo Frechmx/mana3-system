@@ -867,6 +867,19 @@ def query_session_sets(client_id, since_date):
     return rows
 
 
+def _session_ts(session_id):
+    """Decode the epoch-ms timestamp embedded in a session_id ('S-' + base36(Date.now()).
+    Used as a reliable chronological tie-break for same-date sessions.
+    Returns 0 if undecodable so such rows sort first (stable)."""
+    if not session_id:
+        return 0
+    code = session_id[2:] if session_id.startswith("S-") else session_id
+    try:
+        return int(code, 36)
+    except Exception:
+        return 0
+
+
 def _mean_power_stats(sets_json):
     """From a session's sets for one exercise, return (best_mp, avg_mp) where
     mp = per-set MEAN power. W/kg is conventionally mean-power-based, so this is
@@ -891,9 +904,37 @@ def _pct_delta(series):
     return round((vals[-1] - vals[0]) / vals[0] * 100, 1)
 
 
+def _row_metrics(row, measurements, latest_weight):
+    """Compute normalised metrics for one Session Sets row. Returns dict or None-safe fields."""
+    bw = weight_on_or_before(measurements, row.get("date")) or latest_weight
+    best_mp, avg_mp = _mean_power_stats(row.get("sets_json"))
+    top_load = row.get("top_load_kg")
+    return {
+        "session_id": row.get("session_id"),
+        "date": row.get("date"),
+        "best_mv": row.get("best_mv"),
+        "best_mean_power_w": round(best_mp, 1) if best_mp else None,
+        "avg_mean_power_w": round(avg_mp, 1) if avg_mp else None,
+        "peak_power_w": row.get("best_pp"),
+        "top_load_kg": top_load,
+        "wkg_best": round(best_mp / bw, 2) if (best_mp and bw) else None,
+        "wkg_avg": round(avg_mp / bw, 2) if (avg_mp and bw) else None,
+        "rel_strength_x_bw": round(top_load / bw, 2) if (top_load and bw) else None,
+        "tonnage_kg": row.get("tonnage_kg"),
+    }
+
+
+def _max_or_none(vals):
+    vals = [v for v in vals if v is not None]
+    return max(vals) if vals else None
+
+
 def handle_progress(request, client_id, client_page_id, headers):
-    """Per-lift strength/power/tonnage trends, bodyweight-normalised.
-    Query param: range = 30 | 90 | all (default 30)."""
+    """Athlete progress: activity summary, per-lift trends, and top-performance
+    (recent vs all-time ceiling). Query param: range = 30 | 90 | all (default 30).
+
+    The activity summary and trends respect the range; top_performance always
+    uses all-time history (a 'ceiling' can't be derived from a windowed slice)."""
     range_param = (request.args.get("range") if request.method == "GET"
                    else (request.get_json(silent=True) or {}).get("range")) or "30"
     days = _range_to_days(range_param)
@@ -904,56 +945,50 @@ def handle_progress(request, client_id, client_page_id, headers):
     latest_height = next((m["height_cm"] for m in reversed(measurements)
                           if m.get("height_cm")), None)
 
-    sets = query_session_sets(client_id, since)
+    # Fetch ALL-TIME once; filter in Python per block.
+    all_sets = query_session_sets(client_id, None)
+    range_sets = [r for r in all_sets if (since is None or (r.get("date") or "") >= since)]
 
-    # ---- session-level tonnage series (sum across all exercises per session) ----
-    sessions = {}  # session_id -> {date, tonnage}
-    for row in sets:
+    range_label = {"30": "Last 30 days", "90": "Last 90 days"}.get(range_param, "All time")
+
+    # ── ACTIVITY SUMMARY (follows the toggle) ──
+    range_dates = {r.get("date") for r in range_sets if r.get("date")}
+    range_sessions = {r.get("session_id") for r in range_sets if r.get("session_id")}
+    range_exercises = {r.get("exercise_name") for r in range_sets if r.get("exercise_name")}
+    range_tonnage = sum((r.get("tonnage_kg") or 0) for r in range_sets)
+    activity_summary = {
+        "period": range_label,
+        "days_active": len(range_dates),
+        "sessions": len(range_sessions),
+        "total_tonnage_kg": round(range_tonnage),
+        "exercise_count": len(range_exercises),
+    }
+
+    # ── TONNAGE SERIES (range) ──
+    sessions = {}
+    for row in range_sets:
         sid = row.get("session_id")
         if not sid:
             continue
-        s = sessions.setdefault(sid, {"date": row.get("date"), "tonnage": 0})
+        s = sessions.setdefault(sid, {"date": row.get("date"), "session_id": sid, "tonnage": 0})
         s["tonnage"] += row.get("tonnage_kg") or 0
-    tonnage_series = sorted(
-        [{"date": v["date"], "value": round(v["tonnage"])} for v in sessions.values()],
-        key=lambda x: x["date"] or ""
-    )
+    tonnage_series = [
+        {"date": s["date"], "value": round(s["tonnage"])}
+        for s in sorted(sessions.values(),
+                        key=lambda v: (v["date"] or "", _session_ts(v["session_id"])))
+    ]
 
-    # ---- per-lift grouping ----
-    lifts = {}  # exercise_name -> list of per-session aggregates
-    for row in sets:
+    # ── PER-LIFT TRENDS (range) ──
+    lifts = {}
+    for row in range_sets:
         name = row.get("exercise_name")
         if not name:
             continue
-        bw = weight_on_or_before(measurements, row.get("date")) or latest_weight
-        best_mp, avg_mp = _mean_power_stats(row.get("sets_json"))  # MEAN power → W/kg
-        peak_pp = row.get("best_pp")        # PEAK power → its own trend
-        best_mv = row.get("best_mv")        # mean velocity
-        top_load = row.get("top_load_kg")
+        lifts.setdefault(name, []).append(_row_metrics(row, measurements, latest_weight))
 
-        # bodyweight-normalised metrics (None-safe)
-        wkg_best = round(best_mp / bw, 2) if (best_mp and bw) else None
-        wkg_avg = round(avg_mp / bw, 2) if (avg_mp and bw) else None
-        rel_str = round(top_load / bw, 2) if (top_load and bw) else None
-
-        lifts.setdefault(name, []).append({
-            "session_id": row.get("session_id"),
-            "date": row.get("date"),
-            "best_mv": best_mv,
-            "best_mean_power_w": round(best_mp, 1) if best_mp else None,
-            "avg_mean_power_w": round(avg_mp, 1) if avg_mp else None,
-            "peak_power_w": peak_pp,
-            "top_load_kg": top_load,
-            "wkg_best": wkg_best,
-            "wkg_avg": wkg_avg,
-            "rel_strength_x_bw": rel_str,
-            "tonnage_kg": row.get("tonnage_kg"),
-        })
-
-    # keep lifts logged in >= MIN_SESSIONS_FOR_TREND sessions, build trend series
     trends = []
     for name, entries in lifts.items():
-        entries.sort(key=lambda x: x["date"] or "")
+        entries.sort(key=lambda x: (x["date"] or "", _session_ts(x["session_id"])))
         distinct_sessions = len({e["session_id"] for e in entries})
         if distinct_sessions < MIN_SESSIONS_FOR_TREND:
             continue
@@ -972,16 +1007,56 @@ def handle_progress(request, client_id, client_page_id, headers):
         })
     trends.sort(key=lambda t: t["sessions"], reverse=True)
 
+    # ── TOP PERFORMANCE: recent (last 30d) vs all-time ceiling ──
+    recent_since = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
+    alltime_lifts = {}
+    for row in all_sets:
+        name = row.get("exercise_name")
+        if not name:
+            continue
+        alltime_lifts.setdefault(name, []).append(_row_metrics(row, measurements, latest_weight))
+
+    top_performance = []
+    for name, entries in alltime_lifts.items():
+        if len({e["session_id"] for e in entries}) < MIN_SESSIONS_FOR_TREND:
+            continue
+        recent = [e for e in entries if (e["date"] or "") >= recent_since]
+
+        at_wkg = _max_or_none([e["wkg_best"] for e in entries])
+        at_rel = _max_or_none([e["rel_strength_x_bw"] for e in entries])
+        rc_wkg = _max_or_none([e["wkg_best"] for e in recent])
+        rc_rel = _max_or_none([e["rel_strength_x_bw"] for e in recent])
+
+        top_performance.append({
+            "exercise": name,
+            "wkg": {
+                "recent_best": rc_wkg,
+                "all_time_best": at_wkg,
+                "pct_of_ceiling": round(rc_wkg / at_wkg * 100) if (rc_wkg and at_wkg) else None,
+                "is_pr": bool(rc_wkg and at_wkg and rc_wkg >= at_wkg),
+            },
+            "rel_strength": {
+                "recent_best": rc_rel,
+                "all_time_best": at_rel,
+                "pct_of_ceiling": round(rc_rel / at_rel * 100) if (rc_rel and at_rel) else None,
+                "is_pr": bool(rc_rel and at_rel and rc_rel >= at_rel),
+            },
+        })
+    top_performance.sort(key=lambda t: t["exercise"])
+
     return (json.dumps({
         "client_id": client_id,
         "range": range_param,
+        "range_label": range_label,
         "bodyweight_kg": latest_weight,
         "height_cm": latest_height,
         "has_weight_data": latest_weight is not None,
         "session_count": len(sessions),
+        "activity_summary": activity_summary,
         "tonnage_series": tonnage_series,
         "tonnage_delta_pct": _pct_delta(tonnage_series),
         "lifts": trends,
+        "top_performance": top_performance,
         "note": None if trends else
                 "Not enough session data yet — lifts appear once logged in 2+ sessions.",
     }), 200, headers)
