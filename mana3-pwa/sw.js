@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mana3-v6';
+const CACHE_NAME = 'mana3-v7';
 const ASSETS = [
   '/index.html',
   'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@300&display=swap'
