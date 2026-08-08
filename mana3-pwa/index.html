@@ -9,48 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <title>MANA³</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-// ═══ PROMPT ANSWER SELECTION ═══
-const S6_WEBHOOK = 'https://hook.eu1.make.com/rn7s07ch2itq2uc5ea3jqhrpsre2n3t1';
-let selectedPromptAnswer = null;
-
-function selectPromptAnswer(el, answer) {
-  selectedPromptAnswer = answer;
-  document.querySelectorAll('#promptOptions div').forEach(d => {
-    d.style.background = 'var(--surface-heavy)';
-    d.style.borderColor = 'var(--border)';
-    d.style.color = 'var(--bone)';
-  });
-  el.style.background = 'rgba(58,134,255,0.15)';
-  el.style.borderColor = 'var(--manaBlue)';
-  el.style.color = 'var(--manaBlue)';
-  const btn = document.getElementById('promptSubmitBtn');
-  if (btn) btn.style.display = 'block';
-}
-
-async function submitPromptAnswer() {
-  if (!selectedPromptAnswer) return;
-  const btn = document.getElementById('promptSubmitBtn');
-  btn.innerText = 'Submitting...';
-  btn.disabled = true;
-  const clientId = document.getElementById('clientSelect').value.toUpperCase();
-  const date = new Date().toISOString().split('T')[0];
-  try {
-    await fetch(S6_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, date: date, answer: selectedPromptAnswer })
-    });
-    btn.innerText = 'Answer Submitted ✓';
-    btn.style.background = '#00C896';
-    setTimeout(() => fetchAndRender(), 2000);
-  } catch(e) {
-    btn.innerText = 'Error — Try Again';
-    btn.disabled = false;
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <style>
   :root {
@@ -1137,20 +1096,8 @@ async function fetchAndRender() {
   }
 }
 
-// Fetch on load and when switching to today/history tabs
+// Fetch on load
 fetchAndRender();
-
-const _origSwitchTab = switchTab;
-function switchTab(tabId) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById(`view-${tabId}`).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  if(tabId === 'checkin') checkState();
-  if(tabId === 'today' || tabId === 'history') fetchAndRender();
-  if(tabId === 'weekly') fetchWeeklyBrief();
-  if(tabId === 'progress') fetchProgress();
-}
 
 // ═══ PROMPT ANSWER SELECTION ═══
 const S6_WEBHOOK = 'https://hook.eu1.make.com/rn7s07ch2itq2uc5ea3jqhrpsre2n3t1';
