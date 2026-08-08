@@ -1,7 +1,9 @@
 """
-MANA³ S3 — Coherence Scoring Engine v3
-Updated: Integration of S8 Subjective Check-Ins (1-7 scale).
-Added Gap calculations and mapping to F6 (Interoceptive Coherence).
+MANA³ S3 — Coherence Scoring Engine v4
+v4: data_state gate (full/partial/stale/no_sync). Sentinel-zero sanitation at
+the ingress boundary (S3 sends 0 for empty Notion numbers), stale carry-forward
+detection against yesterday's record, and score freezing on stale/no_sync days.
+v3: Integration of S8 Subjective Check-Ins (1-7 scale), F6 gaps.
 """
 import sentry_sdk
 
@@ -14,6 +16,29 @@ sentry_sdk.init(
 import json
 import math
 from statistics import mean, stdev
+
+from data_state import compute_data_state, RECOVERY_BLOCK_FIELDS
+
+# Every nightly-sync field. On stale/no_sync days these are wiped before
+# Tier-2 scoring so no field is scored from fabricated data.
+NIGHT_FIELDS = RECOVERY_BLOCK_FIELDS + ("sleep_deep_pct", "sleep_rem_pct")
+
+# S3 (Make) maps empty Notion numbers to 0 via ifempty(x; 0). 0 is never a
+# real value for these fields, so 0 -> None at the boundary. Activity fields
+# (steps, calories) are excluded: their zeros stay ambiguous by design.
+SENTINEL_ZERO_FIELDS = NIGHT_FIELDS + (
+    "overall_score", "layer_structure", "layer_electricity", "layer_energy",
+    "layer_regulation",
+) + tuple(f"f{i}_score" for i in range(1, 13))
+
+
+def sanitize_sentinel_zeros(d):
+    if not d:
+        return {}
+    for f in SENTINEL_ZERO_FIELDS:
+        if d.get(f) == 0:
+            d[f] = None
+    return d
 
 INTRA_LAYER_PENALTY_MULTIPLIER = 25
 CROSS_LAYER_PENALTY_MULTIPLIER = 30
@@ -643,6 +668,16 @@ def main(request):
         activities_28d = rd.get("activities_28d", [])
         structure_assessment_raw = rd.get("structure_assessment", {})
 
+        # ── Data-state gate (Option B) ──
+        today = sanitize_sentinel_zeros(today)
+        yesterday = sanitize_sentinel_zeros(rd.get("yesterday", {}) or {})
+        ds = compute_data_state(today, yesterday)
+        sentry_sdk.set_tag("data_state", ds.state)
+        if ds.state in ("stale", "no_sync"):
+            # Fabricated or absent nightly data: no field may be scored from it.
+            for f in NIGHT_FIELDS:
+                today[f] = None
+
         # Compute structure anchor for F1/F2/F3
         structure_anchor = compute_structure_anchor(structure_assessment_raw)
 
@@ -693,6 +728,31 @@ def main(request):
         # ── Overall score ──
         overall, band = compute_overall_score(list(ls.values()))
 
+        # ── Freeze on stale/no_sync ──
+        # The score must not move for pipeline reasons. Carry yesterday's
+        # numbers forward verbatim when they exist; the data_state stamp tells
+        # S4 and the PWA why. Flags are suppressed: divergence computed from a
+        # frozen record is noise.
+        frozen = False
+        if ds.state in ("stale", "no_sync") and yesterday.get("overall_score") is not None:
+            frozen = True
+            overall = yesterday["overall_score"]
+            band = "Systemic"
+            for threshold, name in COHERENCE_BANDS:
+                if overall >= threshold:
+                    band = name
+                    break
+            for ln in LAYERS:
+                y = yesterday.get(f"layer_{ln}")
+                if y is not None:
+                    ls[ln] = y
+            for i in range(1, 13):
+                fid = f"F{i}"
+                y = yesterday.get(f"f{i}_score")
+                if y is not None:
+                    fs[fid] = y
+                    fc[fid] = "Low"
+
         # ── Trajectories ──
         traj = {}
         for scope in ["overall", "structure", "electricity", "energy", "regulation"]:
@@ -708,10 +768,13 @@ def main(request):
             }
 
         # ── Priority flags ──
-        flags = compute_priority_flags(fs, ls, overall, traj)
+        flags = [] if frozen else compute_priority_flags(fs, ls, overall, traj)
 
         # ── Build output ──
         output = {
+            "data_state": ds.state,
+            "data_state_reason": ds.reason,
+            "frozen": frozen,
             "field_scores": {},
             "layer_scores": {
                 "structure": safe_num(ls.get("structure")),
