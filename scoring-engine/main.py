@@ -1,5 +1,10 @@
 """
-MANA³ S3 — Coherence Scoring Engine v4
+MANA³ S3 — Coherence Scoring Engine v4.1
+v5: ambulatory activity (steps / calories) is read from YESTERDAY'S COMPLETED
+record, never from today's partial day. S3 runs at 10:45, when only a third of
+today's movement exists; scoring it as a whole day cratered F3 and F7 every
+morning and fired false low-score flags. This also matches the three-phase
+model: yesterday's load is the stimulus last night's recovery answered.
 v4: data_state gate (full/partial/stale/no_sync). Sentinel-zero sanitation at
 the ingress boundary (S3 sends 0 for empty Notion numbers), stale carry-forward
 detection against yesterday's record, and score freezing on stale/no_sync days.
@@ -35,8 +40,17 @@ SENTINEL_ZERO_FIELDS = NIGHT_FIELDS + (
 def sanitize_sentinel_zeros(d):
     if not d:
         return {}
+    # stress_proxy_normalized is the one night field where 0 is a REAL reading
+    # (Polar ans_charge_status 5 -> stress 0). Treat its 0 as a sentinel only
+    # when the rest of the recharge block is absent too.
+    recharge_present = any(
+        (d.get(f) or 0) > 0
+        for f in ("hrv_overnight_rmssd", "resting_heart_rate", "respiration_rate_avg")
+    )
     for f in SENTINEL_ZERO_FIELDS:
         if d.get(f) == 0:
+            if f == "stress_proxy_normalized" and recharge_present:
+                continue
             d[f] = None
     return d
 
@@ -59,6 +73,46 @@ LAYERS = {
 }
 
 # ═══════════════════════════════════════════════
+# Ambulatory volume accumulates across the calendar day. S3 runs at 10:45, when
+# today's figure is a fraction of the eventual total, so it is never a valid
+# scoring input. F3 and F7 read these, so they are sourced from yesterday's
+# finished day instead - which also matches the three-phase model: yesterday's
+# load is the stimulus last night's recovery answered.
+COMPLETED_DAY_FIELDS = ("steps", "calories_active", "calories_total")
+
+
+def resolve_completed_day_activity(today, yesterday):
+    """
+    Replace today's partial ambulatory figures with yesterday's completed ones.
+
+    Returns (today, activity_source):
+      'yesterday' - yesterday's finished day is in use (normal)
+      'none'      - no usable yesterday record (first day, or a gap). Fields are
+                    set to None so the affected sub-metrics are skipped rather
+                    than scored from a partial day.
+    Today's raw partials are kept under '<field>_today_partial' for display;
+    nothing in scoring reads them.
+    """
+    for f in COMPLETED_DAY_FIELDS:
+        today[f"{f}_today_partial"] = today.get(f)
+
+    # S3 sends 0 for empty Notion numbers and steps/calories are deliberately
+    # excluded from sentinel sanitation (a real 0-step day is conceivable), so
+    # 0 must be treated as absent HERE or a yesterday record with no wearable
+    # data at all would score F3/F7 from a fabricated zero.
+    usable = bool(yesterday) and any(
+        (yesterday.get(f) or 0) > 0 for f in COMPLETED_DAY_FIELDS
+    )
+    if not usable:
+        for f in COMPLETED_DAY_FIELDS:
+            today[f] = None
+        return today, "none"
+
+    for f in COMPLETED_DAY_FIELDS:
+        today[f] = yesterday.get(f)
+    return today, "yesterday"
+
+
 # TIER 2 FIELD MAP
 # ═══════════════════════════════════════════════
 TIER2_FIELD_MAP = {
@@ -678,6 +732,12 @@ def main(request):
             for f in NIGHT_FIELDS:
                 today[f] = None
 
+        # ── Completed-day activity (v5) ──
+        # F3 and F7 read steps/calories. Use yesterday's finished day, never
+        # today's partial accumulation.
+        today, activity_source = resolve_completed_day_activity(today, yesterday)
+        sentry_sdk.set_tag("activity_source", activity_source)
+
         # Compute structure anchor for F1/F2/F3
         structure_anchor = compute_structure_anchor(structure_assessment_raw)
 
@@ -774,6 +834,7 @@ def main(request):
         output = {
             "data_state": ds.state,
             "data_state_reason": ds.reason,
+            "activity_source": activity_source,
             "frozen": frozen,
             "field_scores": {},
             "layer_scores": {
