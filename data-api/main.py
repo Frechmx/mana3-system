@@ -1,7 +1,8 @@
 """
 MANA³ PWA Data API
 Google Cloud Run Function. Receives client_id, returns observation history,
-prompt data, and weekly briefs for the PWA to display.
+prompt data, weekly briefs, progress trends, and personal baselines for the
+PWA to display.
 Also handles Strava webhook events and OAuth callback.
 """
 
@@ -47,7 +48,7 @@ CLIENT_MAP = {
 
 
 # ═══════════════════════════════════════════════
-# NOTION HELPERS (existing)
+# NOTION HELPERS
 # ═══════════════════════════════════════════════
 
 def get_text(prop):
@@ -106,6 +107,21 @@ def get_full_text(prop):
     if not texts:
         return None
     return "".join([t.get("plain_text", "") for t in texts])
+
+
+def get_any_text(prop):
+    """Type-tolerant text extraction: works whether the Notion property is a
+    select, a rich_text, or a formula returning a string.
+    Used for data_state, whose column type isn't guaranteed across records."""
+    if not prop:
+        return None
+    if prop.get("select"):
+        return prop["select"].get("name")
+    if prop.get("rich_text"):
+        return get_full_text(prop)
+    if prop.get("formula"):
+        return prop["formula"].get("string")
+    return None
 
 
 # ═══════════════════════════════════════════════
@@ -397,7 +413,7 @@ Client: <span class="id">{client_id}</span></p>
 
 
 # ═══════════════════════════════════════════════
-# EXISTING HANDLERS (unchanged)
+# DAILY / WEEKLY HANDLERS
 # ═══════════════════════════════════════════════
 
 def query_daily_records(client_page_id, days=8):
@@ -433,6 +449,42 @@ def query_daily_records(client_page_id, days=8):
         return []
 
     return resp.json().get("results", [])
+
+
+def query_daily_records_since(client_page_id, since_date, page_cap=3):
+    """Fetch ALL daily records on/after since_date, newest first, paginated.
+    Separate from query_daily_records because the baseline window (28–42 days)
+    exceeds that helper's page_size=days pattern."""
+    filt = {
+        "and": [
+            {"property": "client", "relation": {"contains": client_page_id}},
+            {"property": "date", "date": {"on_or_after": since_date}},
+        ]
+    }
+
+    out = []
+    cursor = None
+    for _ in range(page_cap):  # cap: 3 pages × 100 = 300 records
+        body = {
+            "filter": filt,
+            "sorts": [{"property": "date", "direction": "descending"}],
+            "page_size": 100,
+        }
+        if cursor:
+            body["start_cursor"] = cursor
+        resp = requests.post(
+            f"https://api.notion.com/v1/databases/{DAILY_RECORDS_DB}/query",
+            headers=NOTION_HEADERS,
+            json=body
+        )
+        if resp.status_code != 200:
+            break
+        data = resp.json()
+        out.extend(data.get("results", []))
+        if not data.get("has_more"):
+            break
+        cursor = data.get("next_cursor")
+    return out
 
 
 def query_latest_brief(client_page_id):
@@ -548,6 +600,10 @@ def extract_record(record):
         "observation_layer": get_select(props.get("observation_primary_layer")),
         "band": get_select(props.get("coherence_band")),
         "overall_score": get_number(props.get("overall_score")),
+        # data_state drives which Today screen renders. Exposed here so
+        # renderToday() never has to infer freshness from the numbers.
+        "data_state": get_any_text(props.get("data_state")),
+        "data_state_reason": get_any_text(props.get("data_state_reason")),
         "layer_scores": {
             "structure": get_number(props.get("layer_structure")),
             "electricity": get_number(props.get("layer_electricity")),
@@ -586,7 +642,7 @@ def extract_record(record):
 
 
 # ═══════════════════════════════════════════════
-# CYCLE INDICATORS (unchanged)
+# CYCLE INDICATORS
 # ═══════════════════════════════════════════════
 
 def compute_recovery_proportionality(today_data):
@@ -768,6 +824,291 @@ def handle_weekly_brief(request, client_id, client_page_id, headers):
     return (json.dumps({
         "client_id": client_id,
         "brief": brief
+    }), 200, headers)
+
+
+# ═══════════════════════════════════════════════
+# BASELINES ENDPOINT
+# ═══════════════════════════════════════════════
+#
+# Five physiologically-primary metrics, baselined WITHIN the client. No vendor
+# composites (sleep score, readiness, recovery %, Body Battery, strain): those
+# are already normalised against the vendor's own reference, so a percentile of
+# a percentile adds noise, and they're the one class of number that does not
+# survive a device switch.
+#
+# Because every baseline is within-person, cross-vendor comparability is not
+# required — Polar only has to be consistent with Polar. The one case that does
+# break it is a client changing device mid-protocol, which must reset the window
+# (see DEVICE_SWITCH_FLOOR).
+
+# No record before this date is trustworthy: sleep dating, activity dating, the
+# exercise capture window and the zero-as-absent resolver were all wrong before
+# it. A median computed over earlier days would be a median of known bugs.
+CLEAN_DATA_FLOOR = os.environ.get("CLEAN_DATA_FLOOR", "2026-08-10")
+
+# Per-client override for a mid-protocol device change. A Garmin baseline can't
+# be carried onto Polar values. Key = client_id, value = ISO date of the switch.
+DEVICE_SWITCH_FLOOR = {}
+
+BASELINE_WINDOW_DAYS = 28      # trailing window the median is computed over
+BASELINE_MIN_DAYS = 14         # below this, a metric reports "forming"
+BASELINE_READY_MIN_METRICS = 3 # chips cap at 3, so 3 ready metrics = screen ready
+
+# source: "overnight"     → read from TODAY's record (last night's reading)
+# source: "completed_day" → read from the most recent COMPLETED day. Steps on
+#                           today's record is a partial-day count; at 11:00 it
+#                           is a fraction of the day and comparing it to a
+#                           full-day median would always read "far below normal".
+BASELINE_METRICS = [
+    {
+        "key": "sleep_duration",
+        "prop": "sleep_duration_minutes",
+        "label": "Sleep",
+        "unit": "min",
+        "direction": "higher_is_better",
+        "source": "overnight",
+    },
+    {
+        "key": "hrv",
+        "prop": "hrv_overnight_rmssd",
+        "label": "HRV",
+        "unit": "ms",
+        "direction": "higher_is_better",
+        "source": "overnight",
+    },
+    {
+        "key": "rhr",
+        "prop": "resting_heart_rate",
+        "label": "Resting heart rate",
+        "unit": "bpm",
+        "direction": "lower_is_better",
+        "source": "overnight",
+    },
+    {
+        "key": "respiration",
+        "prop": "respiration_rate_avg",
+        "label": "Breathing rate",
+        "unit": "br/min",
+        "direction": "lower_is_better",
+        "source": "overnight",
+    },
+    {
+        "key": "steps",
+        "prop": "steps",
+        "label": "Steps",
+        "unit": "",
+        "direction": "higher_is_better",
+        "source": "completed_day",
+    },
+]
+
+# Records in these states are excluded from the baseline pool entirely: their
+# numbers are either absent or carried forward from an earlier day.
+EXCLUDED_DATA_STATES = {"no_sync", "stale"}
+
+
+def _clean_value(v):
+    """Zero counts as absent. S1/S3 write 0 for empty Notion numbers, and none
+    of the five metrics has a physiologically real zero on a day the device was
+    worn — including steps, per the same rule used in the scoring engine's
+    completed-day resolver."""
+    if v is None:
+        return None
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if v == 0 else v
+
+
+def _quantile(sorted_vals, q):
+    """Linear-interpolation quantile (type 7). Pure Python — no numpy in the
+    Cloud Run runtime."""
+    n = len(sorted_vals)
+    if n == 0:
+        return None
+    if n == 1:
+        return sorted_vals[0]
+    pos = (n - 1) * q
+    lo = int(pos)
+    hi = min(lo + 1, n - 1)
+    frac = pos - lo
+    return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * frac
+
+
+def _round_or_none(v, digits=1):
+    return round(v, digits) if v is not None else None
+
+
+def _effective_floor(client_id):
+    """Latest of the global clean-data floor and any device-switch floor."""
+    switch = DEVICE_SWITCH_FLOOR.get(client_id)
+    if switch and switch > CLEAN_DATA_FLOOR:
+        return switch
+    return CLEAN_DATA_FLOOR
+
+
+def compute_metric_baseline(spec, pool_values, current_value):
+    """Compute median / IQR / deviation for one metric.
+
+    pool_values  — cleaned, non-null historical values (excludes today)
+    current_value— the value being compared, or None
+    """
+    n = len(pool_values)
+    status = "ready" if n >= BASELINE_MIN_DAYS else "forming"
+
+    out = {
+        "key": spec["key"],
+        "label": spec["label"],
+        "unit": spec["unit"],
+        "direction": spec["direction"],
+        "source": spec["source"],
+        "current": _round_or_none(current_value, 1),
+        "n": n,
+        "days_to_ready": max(0, BASELINE_MIN_DAYS - n),
+        "status": status,
+        "median": None,
+        "q1": None,
+        "q3": None,
+        "iqr": None,
+        "deviation_iqr": None,
+        "direction_vs_baseline": None,
+        "favourable": None,
+    }
+
+    if n == 0:
+        return out
+
+    s = sorted(pool_values)
+    median = _quantile(s, 0.5)
+    q1 = _quantile(s, 0.25)
+    q3 = _quantile(s, 0.75)
+    iqr = (q3 - q1) if (q1 is not None and q3 is not None) else None
+
+    out["median"] = _round_or_none(median, 1)
+    out["q1"] = _round_or_none(q1, 1)
+    out["q3"] = _round_or_none(q3, 1)
+    out["iqr"] = _round_or_none(iqr, 1)
+
+    # Deviation is only meaningful once the window is ready AND the client
+    # actually varies. A zero IQR (identical values, or too few of them) would
+    # divide by zero and report every night as a dramatic outlier.
+    if status == "ready" and current_value is not None and iqr and iqr > 0:
+        dev = (current_value - median) / iqr
+        out["deviation_iqr"] = round(dev, 2)
+        if dev > 0.25:
+            out["direction_vs_baseline"] = "above"
+        elif dev < -0.25:
+            out["direction_vs_baseline"] = "below"
+        else:
+            out["direction_vs_baseline"] = "typical"
+        # Physiology decided here, not in the render layer: for RHR and
+        # breathing rate, below baseline is the good direction.
+        if out["direction_vs_baseline"] == "typical":
+            out["favourable"] = None
+        elif spec["direction"] == "higher_is_better":
+            out["favourable"] = dev > 0
+        else:
+            out["favourable"] = dev < 0
+
+    return out
+
+
+def handle_baselines(request, client_id, client_page_id, headers):
+    """Personal baselines for the five primary metrics.
+
+    Returns, per metric: 28-day median, IQR, current value, deviation in IQR
+    units, and status (forming | ready). Also returns `ranked` — metric keys
+    ordered by absolute deviation — because which three chips Today shows is a
+    computation, not a render decision. Fixed chip slots go stale; deviation-
+    ranked ones never do."""
+
+    floor = _effective_floor(client_id)
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    window_start = (datetime.utcnow() - timedelta(days=BASELINE_WINDOW_DAYS)).strftime("%Y-%m-%d")
+    since = max(floor, window_start)
+
+    records = query_daily_records_since(client_page_id, since)
+    days = [extract_record(r) for r in records]
+    days = [d for d in days if d.get("date")]
+    days.sort(key=lambda d: d["date"], reverse=True)
+
+    today_record = next((d for d in days if d["date"] == today_str), None)
+
+    # Most recent day strictly before today that carries any wearable data —
+    # the source for completed-day metrics.
+    last_completed = None
+    for d in days:
+        if d["date"] >= today_str:
+            continue
+        w = d.get("wearable", {})
+        if any(_clean_value(w.get(k)) is not None
+               for k in ("steps", "calories_total", "sleep_duration", "hrv")):
+            last_completed = d
+            break
+
+    # ── Baseline pool: strictly before today, excluding frozen/absent states ──
+    pool_days = [
+        d for d in days
+        if d["date"] < today_str
+        and (d.get("data_state") or "").lower() not in EXCLUDED_DATA_STATES
+    ]
+
+    metrics = {}
+    for spec in BASELINE_METRICS:
+        key = spec["key"]
+        wkey = "sleep_duration" if key == "sleep_duration" else key
+        # wearable dict keys match the metric keys for all five
+        pool_values = []
+        for d in pool_days:
+            v = _clean_value(d.get("wearable", {}).get(wkey))
+            if v is not None:
+                pool_values.append(v)
+
+        if spec["source"] == "completed_day":
+            src = last_completed
+        else:
+            src = today_record
+        current = _clean_value(src.get("wearable", {}).get(wkey)) if src else None
+
+        m = compute_metric_baseline(spec, pool_values, current)
+        m["current_date"] = src.get("date") if (src and current is not None) else None
+        metrics[key] = m
+
+    ready_keys = [k for k, m in metrics.items() if m["status"] == "ready"]
+    scored = [m for m in metrics.values() if m["deviation_iqr"] is not None]
+    scored.sort(key=lambda m: abs(m["deviation_iqr"]), reverse=True)
+    ranked = [m["key"] for m in scored]
+
+    overall_status = "ready" if len(ready_keys) >= BASELINE_READY_MIN_METRICS else "forming"
+    days_to_ready = None
+    if overall_status == "forming":
+        gaps = sorted(m["days_to_ready"] for m in metrics.values())
+        # days until the Nth-fastest metric crosses the threshold
+        idx = BASELINE_READY_MIN_METRICS - 1
+        days_to_ready = gaps[idx] if idx < len(gaps) else None
+
+    return (json.dumps({
+        "client_id": client_id,
+        "as_of": today_str,
+        "window": {
+            "floor": floor,
+            "since": since,
+            "window_days": BASELINE_WINDOW_DAYS,
+            "min_days": BASELINE_MIN_DAYS,
+            "records_in_window": len(days),
+            "days_in_pool": len(pool_days),
+        },
+        "status": overall_status,
+        "days_to_ready": days_to_ready,
+        "ready_metrics": ready_keys,
+        "metrics": metrics,
+        "ranked": ranked,
+        "top3": ranked[:3],
+        "note": None if overall_status == "ready" else
+                "Baseline still forming — not enough clean days to say what is "
+                "normal for this client yet.",
     }), 200, headers)
 
 
@@ -1110,6 +1451,8 @@ def main(request):
             return handle_weekly_brief(request, client_id, client_page_id, headers)
         elif endpoint == "progress":
             return handle_progress(request, client_id, client_page_id, headers)
+        elif endpoint == "baselines":
+            return handle_baselines(request, client_id, client_page_id, headers)
         else:
             return handle_daily(request, client_id, client_page_id, headers)
 
