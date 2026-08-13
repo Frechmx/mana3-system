@@ -855,6 +855,13 @@ BASELINE_WINDOW_DAYS = 28      # trailing window the median is computed over
 BASELINE_MIN_DAYS = 14         # below this, a metric reports "forming"
 BASELINE_READY_MIN_METRICS = 3 # chips cap at 3, so 3 ready metrics = screen ready
 
+# Below this many observations, median/IQR are not published at all. A "median"
+# of two points is their mean, and an IQR from two points is half their gap —
+# numbers that look like statistics and aren't. The deviation gate already
+# blocks their use, but an inert wrong number in a payload eventually gets read
+# as a right one.
+BASELINE_MIN_STATS = 5
+
 # source: "overnight"     → read from TODAY's record (last night's reading)
 # source: "completed_day" → read from the most recent COMPLETED day. Steps on
 #                           today's record is a partial-day count; at 11:00 it
@@ -893,15 +900,14 @@ BASELINE_METRICS = [
         "direction": "lower_is_better",
         "source": "overnight",
     },
-    {
-        "key": "steps",
-        "prop": "steps",
-        "label": "Steps",
-        "unit": "",
-        "direction": "higher_is_better",
-        "source": "completed_day",
-    },
 ]
+# steps was removed after evidence that it is dominated by wear time, not
+# behaviour: 17,269 on 9 Aug against 1,100 on 12 Aug, both post-backfill. An
+# IQR that wide makes the deviation meaningless, and the chip would report how
+# long the watch was worn while reading as a judgement about effort. Steps
+# remains useful in S4's training context and the weekly brief.
+# The "completed_day" source path is left in place — no metric uses it today,
+# but it is the correct handling for any future full-day metric.
 
 # Records in these states are excluded from the baseline pool entirely: their
 # numbers are either absent or carried forward from an earlier day.
@@ -968,6 +974,7 @@ def compute_metric_baseline(spec, pool_values, current_value):
         "n": n,
         "days_to_ready": max(0, BASELINE_MIN_DAYS - n),
         "status": status,
+        "stats_published": n >= BASELINE_MIN_STATS,
         "median": None,
         "q1": None,
         "q3": None,
@@ -977,7 +984,7 @@ def compute_metric_baseline(spec, pool_values, current_value):
         "favourable": None,
     }
 
-    if n == 0:
+    if n < BASELINE_MIN_STATS:
         return out
 
     s = sorted(pool_values)
