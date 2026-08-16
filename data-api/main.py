@@ -847,6 +847,27 @@ def handle_weekly_brief(request, client_id, client_page_id, headers):
 # it. A median computed over earlier days would be a median of known bugs.
 CLEAN_DATA_FLOOR = os.environ.get("CLEAN_DATA_FLOOR", "2026-08-10")
 
+# ── Recovery pool ───────────────────────────────────────────────────────────
+# Records before CLEAN_DATA_FLOOR carry the penultimate-index bug: one night's
+# reading was stamped onto every following day until the next sync, so 24-31
+# July all read 418/71/52/13.8. The repetition is the bug — but each DISTINCT
+# tuple is a real Polar night that genuinely happened.
+#
+# A baseline is distributional, not temporal: median and IQR describe the set
+# of values this client produces, and mis-dating changes which day a value is
+# filed under, not what the value was. Collapsing runs of identical tuples
+# therefore recovers usable nights without importing the bug. What it cannot
+# recover is nights that were overwritten before ever being written down, so
+# the pool is smaller than reality — Polar's own array holds 21 nights over a
+# span where this yields 12.
+#
+# This applies to baselines ONLY. Anything time-ordered — trends, week-on-week,
+# trajectories — must still use CLEAN_DATA_FLOOR, because recovered rows have
+# no trustworthy date.
+BASELINE_RECOVERY_MODE = os.environ.get("BASELINE_RECOVERY_MODE", "1") == "1"
+BASELINE_RECOVERY_FLOOR = os.environ.get("BASELINE_RECOVERY_FLOOR", "2026-07-10")
+BASELINE_RECOVERY_WINDOW_DAYS = 45
+
 # Per-client override for a mid-protocol device change. A Garmin baseline can't
 # be carried onto Polar values. Key = client_id, value = ISO date of the switch.
 DEVICE_SWITCH_FLOOR = {}
@@ -955,6 +976,33 @@ def _effective_floor(client_id):
     return CLEAN_DATA_FLOOR
 
 
+def _overnight_signature(day):
+    """The four overnight values as a tuple, used to detect carry-forward."""
+    w = day.get("wearable", {}) or {}
+    return tuple(
+        _clean_value(w.get(k))
+        for k in ("sleep_duration", "hrv", "rhr", "respiration")
+    )
+
+
+def collapse_carry_forward(days_ascending):
+    """Drop each day whose four overnight values are identical to the previous
+    day's. Four independent metrics matching to the decimal on consecutive days
+    is the carry-forward signature, not physiology — the odds of a real repeat
+    across all four are negligible. Returns (kept_days, collapsed_count)."""
+    kept, collapsed, prev = [], 0, None
+    for d in days_ascending:
+        sig = _overnight_signature(d)
+        if all(v is None for v in sig):
+            continue
+        if prev is not None and sig == prev:
+            collapsed += 1
+        else:
+            kept.append(d)
+        prev = sig
+    return kept, collapsed
+
+
 def compute_metric_baseline(spec, pool_values, current_value):
     """Compute median / IQR / deviation for one metric.
 
@@ -1033,8 +1081,16 @@ def handle_baselines(request, client_id, client_page_id, headers):
 
     floor = _effective_floor(client_id)
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    window_start = (datetime.utcnow() - timedelta(days=BASELINE_WINDOW_DAYS)).strftime("%Y-%m-%d")
-    since = max(floor, window_start)
+
+    # In recovery mode the pool reaches back past the clean floor and the
+    # carry-forward runs are collapsed. `current` is never taken from that
+    # range — only the pool is widened.
+    recovery = BASELINE_RECOVERY_MODE and BASELINE_RECOVERY_FLOOR < floor
+    window_days = BASELINE_RECOVERY_WINDOW_DAYS if recovery else BASELINE_WINDOW_DAYS
+    pool_floor = BASELINE_RECOVERY_FLOOR if recovery else floor
+
+    window_start = (datetime.utcnow() - timedelta(days=window_days)).strftime("%Y-%m-%d")
+    since = max(pool_floor, window_start)
 
     records = query_daily_records_since(client_page_id, since)
     days = [extract_record(r) for r in records]
@@ -1061,6 +1117,10 @@ def handle_baselines(request, client_id, client_page_id, headers):
         if d["date"] < today_str
         and (d.get("data_state") or "").lower() not in EXCLUDED_DATA_STATES
     ]
+    pool_days.sort(key=lambda d: d["date"])  # ascending, for run detection
+    collapsed = 0
+    if recovery:
+        pool_days, collapsed = collapse_carry_forward(pool_days)
 
     metrics = {}
     for spec in BASELINE_METRICS:
@@ -1101,11 +1161,14 @@ def handle_baselines(request, client_id, client_page_id, headers):
         "as_of": today_str,
         "window": {
             "floor": floor,
+            "pool_floor": pool_floor,
             "since": since,
-            "window_days": BASELINE_WINDOW_DAYS,
+            "window_days": window_days,
             "min_days": BASELINE_MIN_DAYS,
             "records_in_window": len(days),
             "days_in_pool": len(pool_days),
+            "pool_mode": "recovered" if recovery else "clean",
+            "collapsed_runs": collapsed,
         },
         "status": overall_status,
         "days_to_ready": days_to_ready,
