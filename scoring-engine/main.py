@@ -1,5 +1,12 @@
 """
 MANA³ S3 — Coherence Scoring Engine v4.1
+v6: training load is COMPUTED from the activity arrays instead of being read
+back off the Daily Record. load_7d / load_28d / load_ratio were previously
+sourced from today['load_7d'], which comes from the same Notion record this
+engine writes — nothing ever populated them, so they sat at 0 forever and F1
+was scored on activity frequency alone. Load is cardiovascular only: Polar's
+training_load is null and muscular_load is -1 on every row, so cardio_load is
+the sole real signal.
 v5: ambulatory activity (steps / calories) is read from YESTERDAY'S COMPLETED
 record, never from today's partial day. S3 runs at 10:45, when only a third of
 today's movement exists; scoring it as a whole day cratered F3 and F7 every
@@ -218,9 +225,16 @@ def normalize_steps(steps):
     return clamp(steps / 10000 * 75)
 
 def normalize_load_ratio(ratio):
+    """Acute:chronic ratio -> 0-100. Peak at 1.05, tapering to 70 at the edges
+    of the 0.8-1.3 sweet spot.
+
+    v6 fix: the numerator was (1.0 - abs(ratio - 1.05)), which reaches 4x the
+    0.25 divisor and clamped EVERY in-range ratio to exactly 100 — the whole
+    band was flat, so the metric could never discriminate. It is the distance
+    to the edge of the band that matters, not the distance to 1.0."""
     if ratio is None or ratio == 0: return None
     if 0.8 <= ratio <= 1.3:
-        return clamp(70 + (1.0 - abs(ratio - 1.05)) / 0.25 * 30)
+        return clamp(70 + (0.25 - abs(ratio - 1.05)) / 0.25 * 30)
     elif ratio < 0.8:
         return clamp(ratio / 0.8 * 70)
     else:
@@ -691,6 +705,102 @@ def compute_category_diversity(activities_28d):
 
 
 # ═══════════════════════════════════════════════
+# TRAINING LOAD (v6)
+# ═══════════════════════════════════════════════
+# WHAT THIS IS NOT: total training load. Across the whole 28-day window Polar
+# returns training_load as null or 0 on every row, and muscular_load as -1
+# (its "unavailable" sentinel) or null. cardio_load is the only real signal,
+# so load_* here is CARDIOVASCULAR load. Strength work barely registers on it —
+# a PT session on 12 Aug logged 4.0 — which means a heavy lifting week reads as
+# a rest week. The muscular stream has to come from Session Sets tonnage, which
+# S3 does not currently receive; until it does, do not let load_ratio alone
+# drive a training directive.
+
+# Ambulatory volume is already scored through steps and calories in F3 and F7.
+# Counting a long walk as training load double-counts it and inflates the
+# chronic denominator: the 16 July walk (306 min, cardio_load 373 — more than
+# double any genuine session) alone moved the ratio from 0.97 to 0.68.
+LOAD_EXCLUDED_TYPES = {"WALKING", "HIKING", "TRANSPORT"}
+
+# Safety net so no single freak session can dominate either window.
+LOAD_SESSION_CAP = 200.0
+
+# Below this many sessions the chronic window is too thin for the ratio to
+# mean anything, so it is reported as forming rather than published.
+LOAD_MIN_SESSIONS_28D = 8
+
+
+def _activity_field(act, key):
+    """Read a field from an activity that may be a raw Notion page (properties
+    envelope) or an already-flattened dict. compute_category_diversity copes
+    with the same two shapes; this mirrors it rather than assuming one."""
+    if not isinstance(act, dict):
+        return None
+    props = act.get("properties")
+    if props:
+        p = props.get(key) or {}
+        t = p.get("type")
+        if t == "number":
+            return p.get("number")
+        if t == "select":
+            return (p.get("select") or {}).get("name")
+        if t == "rich_text" and p.get("rich_text"):
+            return p["rich_text"][0].get("plain_text")
+        if t == "title" and p.get("title"):
+            return p["title"][0].get("plain_text")
+        return None
+    return act.get(key)
+
+
+def activity_cardio_load(act):
+    """Per-session cardio load, or None if the session must not count."""
+    a_type = _activity_field(act, "activity_type")
+    if a_type and str(a_type).strip().upper() in LOAD_EXCLUDED_TYPES:
+        return None
+    raw = _activity_field(act, "cardio_load")
+    if raw in (None, ""):
+        return None
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return None
+    # Polar writes -1 for "not available"; a negative load is never real, and
+    # summing it would silently subtract from the window.
+    if v <= 0:
+        return None
+    return min(v, LOAD_SESSION_CAP)
+
+
+def compute_load_metrics(activities_7d, activities_28d):
+    """Acute:chronic cardiovascular load.
+
+    load_7d    - sum of the last 7 days
+    load_28d   - sum of the last 28 days
+    load_ratio - acute / (load_28d / 4): this week measured against the
+                 weekly-equivalent average of the last four weeks. 1.0 means
+                 this week matches the established norm.
+
+    Returns (load_7d, load_28d, load_ratio, sessions_28d). load_ratio is None
+    when the chronic window is empty or too thin to publish.
+    """
+    acute = [v for v in (activity_cardio_load(a) for a in (activities_7d or []))
+             if v is not None]
+    chronic = [v for v in (activity_cardio_load(a) for a in (activities_28d or []))
+               if v is not None]
+
+    load_7d = round(sum(acute), 1)
+    load_28d = round(sum(chronic), 1)
+
+    ratio = None
+    if len(chronic) >= LOAD_MIN_SESSIONS_28D:
+        chronic_weekly = load_28d / 4.0
+        if chronic_weekly > 0:
+            ratio = round(load_7d / chronic_weekly, 2)
+
+    return load_7d, load_28d, ratio, len(chronic)
+
+
+# ═══════════════════════════════════════════════
 # MAIN ENTRY POINT
 # ═══════════════════════════════════════════════
 
@@ -749,13 +859,19 @@ def main(request):
         today["activity_count_28d"] = count_28d
         today["category_diversity"] = category_diversity
 
-        if not today.get("load_ratio") or today.get("load_ratio") == 0:
-            load_7d = today.get("load_7d", 0) or 0
-            load_28d = today.get("load_28d", 0) or 0
-            if load_28d > 0:
-                chronic_weekly = load_28d / 4
-                if chronic_weekly > 0:
-                    today["load_ratio"] = round(load_7d / chronic_weekly, 2)
+        # ── Training load (v6) ──
+        # Previously this read today["load_7d"] / today["load_28d"], which come
+        # from the same Notion record this engine writes. Nothing upstream ever
+        # populated them, so they were permanently 0, load_ratio stayed 0, and
+        # F1 was scored on activity frequency alone. Compute from the activity
+        # arrays the engine already receives instead.
+        load_7d, load_28d, load_ratio, load_sessions_28d = compute_load_metrics(
+            activities_7d, activities_28d
+        )
+        today["load_7d"] = load_7d
+        today["load_28d"] = load_28d
+        today["load_ratio"] = load_ratio
+        sentry_sdk.set_tag("load_sessions_28d", load_sessions_28d)
 
         # ── Process Check-ins & Gaps (S8 Integration) ──
         today = process_checkins_and_gaps(today)
@@ -855,6 +971,17 @@ def main(request):
             "activity_count_7d": count_7d,
             "activity_count_28d": count_28d,
             "category_diversity": category_diversity,
+            "load_7d": load_7d,
+            "load_28d": load_28d,
+            "load_ratio": safe_num(load_ratio),
+            "load": {
+                "stream": "cardio_only",
+                "cardio_7d": load_7d,
+                "cardio_28d": load_28d,
+                "cardio_ratio": load_ratio,
+                "sessions_28d": load_sessions_28d,
+                "status": "ready" if load_ratio is not None else "forming",
+            },
             "gaps": {
                 "sleep": safe_num(today.get("gap_sleep")),
                 "recovery": safe_num(today.get("gap_recovery")),
