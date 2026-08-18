@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MANA³ — Coach Session</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* MANA³ palette — swap to exact brand hexes if these drift */
+  --ink:#0d0f12;
+  --ink-2:#15181d;
+  --ink-3:#1d2128;
+  --bone:#e9e5dc;
+  --subdued:#8a8f98;
+  --line:#262b33;
+  --blue:#4f7df0;
+  --yellow:#e8c54a;
+  --red:#e05a4e;
+  --green:#4fae7a;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--ink);color:var(--bone);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-family:'Space Grotesk',monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.01em}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea,select{font-family:inherit;color:var(--bone);background:var(--ink-3);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;width:100%}
+input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+input[type=number],input.numfield{font-family:'Space Grotesk',monospace;text-align:center;padding:10px 4px}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.screen{display:none;min-height:100dvh;flex-direction:column}
+.screen.active{display:flex}
+.wrap{width:100%;max-width:560px;margin:0 auto;padding:20px;flex:1;display:flex;flex-direction:column}
+
+/* ---------- PIN ---------- */
+#pinScreen{justify-content:center;align-items:center;text-align:center}
+.brand{font-family:'Space Grotesk';font-weight:700;font-size:22px;letter-spacing:.18em;margin-bottom:6px}
+.brand sup{color:var(--blue)}
+.pin-sub{color:var(--subdued);font-size:13px;margin-bottom:28px}
+.build-tag{color:var(--line);font-size:10px;letter-spacing:.1em;margin-top:-22px;margin-bottom:22px}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:30px}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--subdued);transition:all .15s}
+.pin-dot.filled{background:var(--bone);border-color:var(--bone)}
+.pin-dots.error .pin-dot{border-color:var(--red);animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.numpad{display:grid;grid-template-columns:repeat(3,72px);gap:14px;justify-content:center}
+.numpad button{height:72px;border-radius:50%;background:var(--ink-2);border:1px solid var(--line);font-family:'Space Grotesk';font-size:24px;transition:background .1s}
+.numpad button:active{background:var(--ink-3)}
+
+/* ---------- generic ---------- */
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--subdued);margin-bottom:6px}
+.card{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.btn{display:block;width:100%;padding:15px;border-radius:12px;font-weight:600;font-size:16px;text-align:center;transition:opacity .12s}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-ghost{background:var(--ink-3);border:1px solid var(--line)}
+.btn-green{background:var(--green);color:#08130d}
+.btn:disabled{opacity:.35;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center}
+.spacer{flex:1}
+.textlink{color:var(--subdued);font-size:13px;text-decoration:underline;padding:10px 0;display:block;width:100%;text-align:center}
+
+/* ---------- scale buttons ---------- */
+.scale{display:flex;gap:8px;justify-content:space-between}
+.scale button{flex:1;aspect-ratio:1;max-width:64px;border-radius:12px;background:var(--ink-3);border:1px solid var(--line);font-family:'Space Grotesk';font-size:19px;font-weight:500;transition:all .1s}
+.scale button.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.scale.rpe{flex-wrap:wrap;gap:7px}
+.scale.rpe button{flex:0 0 calc(20% - 6px);max-width:none;aspect-ratio:1.15}
+.scale-labels{display:flex;justify-content:space-between;color:var(--subdued);font-size:11px;margin-top:7px}
+
+/* ---------- client select ---------- */
+.client-item{display:flex;align-items:center;gap:12px;padding:16px;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;width:100%;text-align:left;font-size:16px}
+.client-item:active{border-color:var(--blue)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--ink-3);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:600;color:var(--blue);flex-shrink:0}
+
+/* ---------- readiness ---------- */
+#readyScreen .wrap{justify-content:center;text-align:center}
+#readyScreen h2{font-size:24px;margin-bottom:8px}
+#readyScreen .who{color:var(--subdued);margin-bottom:34px}
+
+/* ---------- console ---------- */
+.console-head{position:sticky;top:0;background:linear-gradient(var(--ink) 82%,transparent);z-index:10;padding:14px 0 12px}
+.console-head .top{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.console-head .name{font-family:'Space Grotesk';font-weight:600;font-size:17px}
+.console-head .timer{color:var(--subdued);font-size:13px}
+.pulse{display:flex;gap:10px}
+.pulse .cell{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.pulse .cell b{display:block;font-family:'Space Grotesk';font-size:17px;font-weight:600}
+.pulse .cell span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--subdued)}
+.pulse .cell b.tonnage{color:var(--yellow)}
+
+.ex-card{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.ex-head{display:flex;align-items:center;gap:8px;padding:13px 14px;width:100%;text-align:left}
+.ex-head .ex-name{font-family:'Space Grotesk';font-weight:600;font-size:15px;flex:1}
+.ex-head .ex-meta{color:var(--subdued);font-size:12px}
+.ex-head .chev{color:var(--subdued);transition:transform .15s}
+.ex-card.open .chev{transform:rotate(180deg)}
+.ex-body{display:none;padding:0 14px 14px;border-top:1px solid var(--line)}
+.ex-card.open .ex-body{display:block}
+.mode-tag{font-size:10px;letter-spacing:.08em;padding:3px 7px;border-radius:6px;text-transform:uppercase}
+.mode-tag.vbt{background:rgba(79,125,240,.15);color:var(--blue)}
+.mode-tag.load{background:rgba(232,197,74,.13);color:var(--yellow)}
+
+.set-grid{display:grid;gap:6px;margin-top:10px}
+.set-grid .hdr{display:grid;gap:6px;color:var(--subdued);font-size:10px;letter-spacing:.07em;text-transform:uppercase;text-align:center;padding:0 2px}
+.set-row{display:grid;gap:6px;align-items:center}
+.grid-vbt{grid-template-columns:26px 1fr 1fr 1fr 1fr 1fr 30px}
+.grid-load{grid-template-columns:26px 1fr 1fr 30px}
+.set-no{font-family:'Space Grotesk';color:var(--subdued);font-size:13px;text-align:center}
+.set-del{color:var(--subdued);font-size:17px;text-align:center}
+.ex-stats{display:flex;gap:14px;margin-top:11px;flex-wrap:wrap}
+.ex-stats div{font-size:12px;color:var(--subdued)}
+.ex-stats b{color:var(--bone);font-family:'Space Grotesk'}
+.ex-stats b.drop-warn{color:var(--red)}
+.ex-actions{display:flex;gap:8px;margin-top:11px}
+.ex-actions .btn{padding:11px;font-size:14px}
+.ex-remove{margin-top:10px;color:var(--subdued);font-size:12px;text-decoration:underline}
+
+/* ---------- exercise picker ---------- */
+.sheet{position:fixed;inset:0;background:rgba(8,9,11,.7);z-index:50;display:none;align-items:flex-end}
+.sheet.open{display:flex}
+.sheet-panel{background:var(--ink-2);border-radius:18px 18px 0 0;width:100%;max-width:560px;margin:0 auto;max-height:84dvh;display:flex;flex-direction:column;padding:18px 18px 26px}
+.sheet-panel h3{margin-bottom:12px}
+.lib-list{overflow-y:auto;flex:1;margin-top:10px}
+.lib-group{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--subdued);margin:14px 0 6px}
+.lib-item{display:flex;width:100%;text-align:left;padding:11px 10px;border-radius:9px;font-size:15px;gap:8px;align-items:center}
+.lib-item:active{background:var(--ink-3)}
+.mode-pick{display:flex;gap:8px;margin:12px 0 4px}
+.mode-pick button{flex:1;padding:11px;border-radius:10px;background:var(--ink-3);border:1px solid var(--line);font-size:13px;font-weight:600}
+.mode-pick button.sel{border-color:var(--blue);color:var(--blue)}
+
+/* ---------- checkout ---------- */
+#checkoutScreen{background:var(--ink)}
+.co-badge{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);border:1px solid var(--green);border-radius:99px;padding:4px 12px;margin-bottom:14px}
+.zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.zone{padding:10px 6px;border-radius:10px;background:var(--ink-3);border:1px solid var(--line);font-size:12.5px;text-align:center;position:relative}
+.zone.lvl1,.zone.lvl2{border-color:var(--yellow);color:var(--yellow)}
+.zone.lvl3,.zone.lvl4{border-color:var(--red);color:var(--red)}
+.zone.lvl5{background:var(--red);border-color:var(--red);color:#fff}
+.zone .sev{position:absolute;top:3px;right:7px;font-family:'Space Grotesk';font-size:11px}
+.sev-sheet .scale{margin-top:8px}
+
+/* ---------- summary / done ---------- */
+.sum-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sum-line:last-child{border:none}
+.sum-line span{color:var(--subdued)}
+#doneScreen .wrap{justify-content:center;align-items:center;text-align:center}
+.done-mark{width:70px;height:70px;border-radius:50%;border:2px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:18px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink-3);border:1px solid var(--line);padding:11px 18px;border-radius:11px;font-size:14px;z-index:99;display:none;max-width:88vw;text-align:center;line-height:1.35}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ PIN ============ -->
+<div class="screen active" id="pinScreen">
+  <div class="wrap" style="justify-content:center;align-items:center">
+    <div class="brand">MANA<sup>3</sup></div>
+    <div class="pin-sub">Coach console — enter PIN</div>
+    <div class="build-tag" id="buildTag"></div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="numpad" id="numpad"></div>
+  </div>
+</div>
+
+<!-- ============ CLIENT SELECT ============ -->
+<div class="screen" id="clientScreen">
+  <div class="wrap">
+    <div style="margin:26px 0 22px">
+      <div class="eyebrow">New session</div>
+      <h2 style="font-size:23px">Who are you training?</h2>
+    </div>
+    <div id="clientList"><div style="color:var(--subdued);font-size:14px">Loading clients…</div></div>
+    <div id="resumeBox" style="display:none;margin-top:8px">
+      <div class="card" style="border-color:var(--yellow)">
+        <div style="font-size:14px;margin-bottom:10px">A session is in progress from <b id="resumeWho"></b>.</div>
+        <div class="row">
+          <button class="btn btn-primary" style="flex:1;padding:11px" onclick="App.resume()">Resume</button>
+          <button class="btn btn-ghost" style="flex:1;padding:11px" onclick="App.discard()">Discard</button>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="textlink" id="archiveLink" style="display:none" onclick="App.copyArchive()">Copy last saved session (recovery)</button>
+  </div>
+</div>
+
+<!-- ============ READINESS GATE ============ -->
+<div class="screen" id="readyScreen">
+  <div class="wrap">
+    <div class="eyebrow" style="text-align:center">Hand the phone to your client</div>
+    <h2>How ready do you feel<br>to train today?</h2>
+    <div class="who" id="readyWho"></div>
+    <div class="scale" id="readyScale"></div>
+    <div class="scale-labels"><span>Not at all</span><span>Fully ready</span></div>
+  </div>
+</div>
+
+<!-- ============ COACH CONSOLE ============ -->
+<div class="screen" id="consoleScreen">
+  <div class="wrap" style="padding-top:0">
+    <div class="console-head">
+      <div class="top">
+        <div class="name" id="cName"></div>
+        <div class="timer num" id="cTimer">00:00</div>
+        <div class="spacer"></div>
+        <div style="color:var(--subdued);font-size:12px" id="cReady"></div>
+      </div>
+      <div class="pulse">
+        <div class="cell"><b class="tonnage num" id="pTonnage">0</b><span>kg total</span></div>
+        <div class="cell"><b class="num" id="pSets">0</b><span>sets</span></div>
+        <div class="cell"><b class="num" id="pEx">0</b><span>exercises</span></div>
+      </div>
+    </div>
+
+    <div id="exList"></div>
+
+    <button class="btn btn-ghost" onclick="App.openPicker()" style="margin-bottom:14px">+ Add exercise</button>
+
+    <div class="card">
+      <div class="eyebrow">Session notes</div>
+      <textarea id="coachNotes" rows="3" placeholder="What you saw today — movement quality, cues, anything to remember" oninput="App.save()"></textarea>
+      <div class="eyebrow" style="margin-top:14px">Your session rating</div>
+      <div class="scale" id="coachScale"></div>
+      <div class="scale-labels"><span>Poor session</span><span>Excellent</span></div>
+    </div>
+
+    <button class="btn btn-green" onclick="App.startCheckout()">Client checkout →</button>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ============ CHECKOUT (client) ============ -->
+<div class="screen" id="checkoutScreen">
+  <div class="wrap">
+    <div style="margin-top:22px">
+      <span class="co-badge">Client checkout</span>
+      <h2 style="font-size:21px;margin-bottom:22px">Almost done, <span id="coWho"></span>. Four quick questions.</h2>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">How hard was the session overall?</div>
+      <div class="scale rpe" id="rpeScale"></div>
+      <div class="scale-labels"><span>0 — rest</span><span>10 — maximal</span></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Any soreness or pain right now? Tap where.</div>
+      <div class="zone-grid" id="zoneGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">How is your energy right now?</div>
+      <div class="scale" id="energyScale"></div>
+      <div class="scale-labels"><span>Empty</span><span>Energized</span></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Anything to flag? (optional)</div>
+      <input type="text" id="clientNote" placeholder="One line is enough" oninput="App.save()">
+    </div>
+
+    <button class="btn btn-primary" id="coDone" onclick="App.finishCheckout()" disabled>Done — hand back to coach</button>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ============ SEVERITY SHEET ============ -->
+<div class="sheet" id="sevSheet">
+  <div class="sheet-panel sev-sheet">
+    <h3 id="sevTitle" style="font-size:17px"></h3>
+    <div class="eyebrow" style="margin-top:6px">How sore? 0 clears it.</div>
+    <div class="scale" id="sevScale"></div>
+    <div class="scale-labels"><span>None</span><span>Severe</span></div>
+  </div>
+</div>
+
+<!-- ============ VALIDATE ============ -->
+<div class="screen" id="validateScreen">
+  <div class="wrap">
+    <div style="margin:24px 0 18px">
+      <div class="eyebrow">Review &amp; validate</div>
+      <h2 style="font-size:22px" id="vTitle"></h2>
+    </div>
+    <div class="card" id="vSummary"></div>
+    <div class="card">
+      <div class="eyebrow">Session duration (min)</div>
+      <input type="text" inputmode="numeric" id="vDuration" class="numfield" style="max-width:120px;text-align:left;padding:10px 12px">
+      <div style="color:var(--subdued);font-size:12px;margin-top:6px">Session load = sRPE × duration. Adjust if you ran over.</div>
+    </div>
+    <button class="btn btn-primary" id="vSend" onclick="App.submit()">Validate &amp; save session</button>
+    <button class="textlink" onclick="App.copyCurrent()">Copy session JSON</button>
+    <button class="btn" style="color:var(--subdued);font-size:13px;margin-top:4px" onclick="App.show('consoleScreen')">← Back to console</button>
+  </div>
+</div>
+
+<!-- ============ DONE ============ -->
+<div class="screen" id="doneScreen">
+  <div class="wrap">
+    <div class="done-mark">✓</div>
+    <h2 style="font-size:22px;margin-bottom:8px">Session sent</h2>
+    <div style="color:var(--subdued);font-size:14px;margin-bottom:8px" id="doneSub"></div>
+    <div style="color:var(--subdued);font-size:12px;max-width:320px;margin-bottom:26px">
+      Make accepted the payload. Confirm the record landed in Notion before you rely on it — a copy is kept on this device either way.
+    </div>
+    <button class="btn btn-primary" style="max-width:280px" onclick="App.reset()">New session</button>
+    <button class="textlink" onclick="App.copyArchive()">Copy this session's JSON</button>
+  </div>
+</div>
+
+<!-- ============ EXERCISE PICKER ============ -->
+<div class="sheet" id="pickerSheet">
+  <div class="sheet-panel">
+    <h3 style="font-size:18px">Add exercise</h3>
+    <input type="text" id="libSearch" placeholder="Search or type a new exercise name" oninput="App.filterLib()">
+    <div class="mode-pick">
+      <button id="modeVbt" class="sel" onclick="App.setMode('vbt')">VBT — velocity &amp; power</button>
+      <button id="modeLoad" onclick="App.setMode('load')">Load only — reps × kg</button>
+    </div>
+    <div class="lib-list" id="libList"></div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="App.closePicker()">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ================= BUILD ================= */
+/* Bump on every deploy. Renders on the PIN screen so you can confirm at a
+   glance that Cloudflare served the new file. */
+const BUILD = '2026-08-18.1 · recovery-safe';
+
+/* ================= CONFIG ================= */
+const PIN = '1810';
+const WEBHOOK_CLIENTS = 'https://hook.eu1.make.com/acz53me5j3sbrftxcaxum4tbxdphs1a4'; // S12A — returns [{client_id, full_name, notion_page_id}]
+const WEBHOOK_SUBMIT  = 'https://hook.eu1.make.com/acz5fyyn4lwmugn9opefoc6w7ot4b7za'; // S14 Session Ingestion
+const FALLBACK_CLIENTS = [{ client_id:'MANA-TEST', full_name:'Sarah Nicholas', notion_page_id:'324b52582f9c8045b971e08677181692' }];
+const STORE_KEY   = 'mana3_session_v1';
+const ARCHIVE_KEY = 'mana3_session_archive_v1';
+const SUBMIT_TIMEOUT_MS = 20000;
+const ARCHIVE_MAX = 10;
+
+/* ============ EXERCISE LIBRARY (seed) ============ */
+const LIBRARY = {
+  'Squat': ['Back Squat','Front Squat','Box Squat','Goblet Squat','Split Squat','Bulgarian Split Squat','Leg Press'],
+  'Hinge': ['Deadlift','Trap Bar Deadlift','Romanian Deadlift','Sumo Deadlift','Hip Thrust','Good Morning','Nordic Curl'],
+  'Press': ['Bench Press','Incline Bench Press','DB Bench Press','Overhead Press','Push Press','Landmine Press','Push-Up'],
+  'Pull': ['Pull-Up','Chin-Up','Lat Pulldown','Bent-Over Row','Pendlay Row','Seated Cable Row','Single-Arm DB Row','Face Pull'],
+  'Olympic & power': ['Power Clean','Hang Power Clean','Clean Pull','Power Snatch','Hang Snatch','High Pull','Jerk'],
+  'Jumps & throws': ['Countermovement Jump','Squat Jump','Box Jump','Broad Jump','Depth Jump','Med Ball Chest Throw','Med Ball Slam','Med Ball Rotational Throw'],
+  'Carries & core': ['Farmer Carry','Suitcase Carry','Sled Push','Sled Drag','Kettlebell Swing','Pallof Press','Hanging Leg Raise','Plank'],
+  'Session additions': []
+};
+
+const ZONES = ['Neck','Shoulder L','Shoulder R','Upper back','Lower back','Chest','Arm L','Arm R','Hip / glute L','Hip / glute R','Quad L','Quad R','Hamstring L','Hamstring R','Knee L','Knee R','Calf L','Calf R'];
+
+/* ================= STATE ================= */
+let S = blankState();
+function blankState(){
+  return {
+    session_id:'S-'+Date.now().toString(36).toUpperCase(),
+    client:null, started_at:null, readiness_pre:null, readiness_ts:null,
+    exercises:[], coach_rating:null, coach_notes:'',
+    checkout:{ session_rpe:null, soreness:{}, energy_post:null, client_note:'' },
+    phase:'client'
+  };
+}
+let timerInt=null, pickMode='vbt', sevZone=null, pinBuf='', isSubmitting=false;
+
+/* ================= NUMBER PARSING ================= */
+/* Swiss/French keyboards emit a comma as the decimal separator.
+   Number("0,45") is NaN, which the old build stored as null — velocity and
+   load values disappeared silently as they were typed. */
+function parseNum(v){
+  if(v===null||v===undefined) return null;
+  const s=String(v).trim().replace(',', '.');
+  if(s==='') return null;
+  const n=Number(s);
+  return Number.isFinite(n)?n:null;
+}
+
+/* ================= STORAGE (guarded) ================= */
+const Store = {
+  save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){} },
+  load(){ try{ const r=localStorage.getItem(STORE_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } },
+  clear(){ try{ localStorage.removeItem(STORE_KEY); }catch(e){} },
+
+  /* S14 responds at module 2, BEFORE the Notion writes. A 200 means
+     "Make received it", not "the session was saved". So submitted sessions
+     are archived rather than deleted. */
+  archive(payload){
+    try{
+      const a=JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]');
+      a.unshift({ archived_at:new Date().toISOString(), payload });
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(a.slice(0,ARCHIVE_MAX)));
+    }catch(e){}
+  },
+  lastArchived(){
+    try{ const a=JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]'); return a[0]||null; }catch(e){ return null; }
+  }
+};
+
+/* ================= APP ================= */
+const App = {
+
+  /* ---- navigation ---- */
+  show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  },
+  save(){
+    S.coach_notes = document.getElementById('coachNotes').value;
+    S.checkout.client_note = document.getElementById('clientNote').value;
+    Store.save();
+  },
+  toast(msg){
+    const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+    clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',4000);
+  },
+  async copy(text,label){
+    try{
+      await navigator.clipboard.writeText(text);
+      App.toast(label+' copied to clipboard');
+    }catch(e){
+      console.log('[MANA3] copy fallback — payload below:\n'+text);
+      App.toast('Clipboard blocked. Payload logged to console instead.');
+    }
+  },
+  copyCurrent(){ App.copy(JSON.stringify(App.buildPayload(),null,2),'Session JSON'); },
+  copyArchive(){
+    const last=Store.lastArchived();
+    if(!last){ App.toast('Nothing archived on this device yet'); return; }
+    App.copy(JSON.stringify(last.payload,null,2),'Last saved session');
+  },
+
+  /* ---- PIN ---- */
+  initPin(){
+    const pad=document.getElementById('numpad');
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+      const b=document.createElement('button');
+      b.textContent=k; if(!k) b.style.visibility='hidden';
+      b.onclick=()=>App.pinKey(k);
+      pad.appendChild(b);
+    });
+    try{ if(sessionStorage.getItem('mana3_unlocked')==='1'){ App.unlock(); } }catch(e){}
+  },
+  pinKey(k){
+    if(k==='⌫'){ pinBuf=pinBuf.slice(0,-1); }
+    else if(k && pinBuf.length<4){ pinBuf+=k; }
+    const dots=document.querySelectorAll('.pin-dot');
+    dots.forEach((d,i)=>d.classList.toggle('filled', i<pinBuf.length));
+    if(pinBuf.length===4){
+      if(pinBuf===PIN){
+        try{ sessionStorage.setItem('mana3_unlocked','1'); }catch(e){}
+        setTimeout(App.unlock,120);
+      } else {
+        const box=document.getElementById('pinDots');
+        box.classList.add('error');
+        setTimeout(()=>{ box.classList.remove('error'); pinBuf=''; dots.forEach(d=>d.classList.remove('filled')); },380);
+      }
+    }
+  },
+  unlock(){
+    App.show('clientScreen');
+    App.loadClients();
+    if(Store.lastArchived()) document.getElementById('archiveLink').style.display='block';
+    const saved=Store.load();
+    if(saved && saved.phase!=='client'){
+      document.getElementById('resumeBox').style.display='block';
+      document.getElementById('resumeWho').textContent=(saved.client?saved.client.full_name:'unknown')+' — '+(saved.started_at?new Date(saved.started_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'');
+      App._saved=saved;
+    }
+  },
+  resume(){ S=App._saved; App.restoreUI(); },
+  discard(){ Store.clear(); document.getElementById('resumeBox').style.display='none'; },
+
+  /* ---- clients ---- */
+  async loadClients(){
+    let clients=FALLBACK_CLIENTS;
+    try{
+      const r=await fetch(WEBHOOK_CLIENTS);
+      if(r.ok){
+        const d=await r.json();
+        if(Array.isArray(d)&&d.length){
+          /* Keep a known page id if the endpoint ever stops returning one —
+             a blank client_page_id breaks the Notion relation in S14. */
+          clients=d.map(c=>{
+            if(c.notion_page_id) return c;
+            const known=FALLBACK_CLIENTS.find(f=>f.client_id===c.client_id);
+            return known?Object.assign({},c,{notion_page_id:known.notion_page_id}):c;
+          });
+        }
+      }
+    }catch(e){
+      console.warn('[MANA3] Client list unavailable, using fallback:',e);
+    }
+    const list=document.getElementById('clientList'); list.innerHTML='';
+    clients.forEach(c=>{
+      const b=document.createElement('button');
+      b.className='client-item';
+      b.innerHTML='<div class="avatar">'+c.full_name.split(' ').map(w=>w[0]).join('').slice(0,2)+'</div><div>'+c.full_name+'<div style="color:var(--subdued);font-size:12px">'+c.client_id+(c.notion_page_id?'':' · no page id')+'</div></div>';
+      b.onclick=()=>App.pickClient(c);
+      list.appendChild(b);
+    });
+  },
+  pickClient(c){
+    S=blankState(); S.client=c; S.phase='ready';
+    document.getElementById('readyWho').textContent=c.full_name;
+    Store.save();
+    App.show('readyScreen');
+  },
+
+  /* ---- scales ---- */
+  initScales(){
+    App.buildScale('readyScale',0,5,v=>{
+      S.readiness_pre=v; S.readiness_ts=new Date().toISOString();
+      S.started_at=new Date().toISOString(); S.phase='console';
+      Store.save();
+      setTimeout(()=>{ App.enterConsole(); },220);
+    });
+    App.buildScale('coachScale',0,5,v=>{ S.coach_rating=v; Store.save(); });
+    App.buildScale('rpeScale',0,10,v=>{ S.checkout.session_rpe=v; Store.save(); App.checkoutGate(); });
+    App.buildScale('energyScale',0,5,v=>{ S.checkout.energy_post=v; Store.save(); App.checkoutGate(); });
+    App.buildScale('sevScale',0,5,v=>{ App.setSeverity(v); });
+  },
+  buildScale(id,min,max,cb){
+    const el=document.getElementById(id); el.innerHTML='';
+    for(let v=min;v<=max;v++){
+      const b=document.createElement('button');
+      b.textContent=v;
+      b.onclick=()=>{ el.querySelectorAll('button').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); cb(v); };
+      el.appendChild(b);
+    }
+  },
+  markScale(id,v){
+    if(v===null||v===undefined)return;
+    const el=document.getElementById(id);
+    el.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', Number(b.textContent)===v));
+  },
+
+  /* ---- console ---- */
+  enterConsole(){
+    document.getElementById('cName').textContent=S.client.full_name;
+    document.getElementById('cReady').textContent='Readiness '+S.readiness_pre+'/5';
+    App.show('consoleScreen');
+    App.renderExercises();
+    App.startTimer();
+  },
+  startTimer(){
+    clearInterval(timerInt);
+    timerInt=setInterval(()=>{
+      if(!S.started_at)return;
+      const sec=Math.floor((Date.now()-new Date(S.started_at))/1000);
+      const m=String(Math.floor(sec/60)).padStart(2,'0'), s=String(sec%60).padStart(2,'0');
+      document.getElementById('cTimer').textContent=m+':'+s;
+    },1000);
+  },
+
+  /* ---- exercise picker ---- */
+  openPicker(){ document.getElementById('pickerSheet').classList.add('open'); document.getElementById('libSearch').value=''; App.filterLib(); },
+  closePicker(){ document.getElementById('pickerSheet').classList.remove('open'); },
+  setMode(m){
+    pickMode=m;
+    document.getElementById('modeVbt').classList.toggle('sel',m==='vbt');
+    document.getElementById('modeLoad').classList.toggle('sel',m==='load');
+  },
+  filterLib(){
+    const q=document.getElementById('libSearch').value.trim().toLowerCase();
+    const list=document.getElementById('libList'); list.innerHTML='';
+    let any=false;
+    Object.entries(LIBRARY).forEach(([group,items])=>{
+      const hits=items.filter(n=>!q||n.toLowerCase().includes(q));
+      if(!hits.length)return;
+      any=true;
+      const g=document.createElement('div'); g.className='lib-group'; g.textContent=group; list.appendChild(g);
+      hits.forEach(n=>{
+        const b=document.createElement('button'); b.className='lib-item'; b.textContent=n;
+        b.onclick=()=>App.addExercise(n);
+        list.appendChild(b);
+      });
+    });
+    if(q && !any){
+      const b=document.createElement('button'); b.className='lib-item';
+      const name=document.getElementById('libSearch').value.trim();
+      b.innerHTML='＋ Add new exercise: <b style="margin-left:4px">'+App.escHtml(name)+'</b>';
+      b.onclick=()=>App.addExercise(name,true);
+      list.appendChild(b);
+    }
+  },
+  escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+  addExercise(name,isNew){
+    if(isNew){
+      // keep names controlled: Title Case, single spaces
+      name=name.replace(/\s+/g,' ').replace(/\w\S*/g,t=>t[0].toUpperCase()+t.slice(1).toLowerCase());
+      if(!LIBRARY['Session additions'].includes(name)) LIBRARY['Session additions'].push(name);
+    }
+    const ex={ id:'E'+Date.now().toString(36), name, mode:pickMode, sets:[], open:true };
+    ex.sets.push(App.blankSet(ex.mode));
+    S.exercises.push(ex);
+    Store.save();
+    App.closePicker();
+    App.renderExercises();
+  },
+  blankSet(mode){
+    return mode==='vbt'
+      ? {reps:null,kg:null,mv:null,mp:null,pp:null}
+      : {reps:null,kg:null};
+  },
+
+  /* ---- exercise rendering ---- */
+  renderExercises(){
+    const host=document.getElementById('exList'); host.innerHTML='';
+    S.exercises.forEach(ex=>{
+      const card=document.createElement('div');
+      card.className='ex-card'+(ex.open?' open':'');
+      card.dataset.ex=ex.id;
+      card.innerHTML=`
+        <button class="ex-head" onclick="App.toggleEx('${ex.id}')">
+          <span class="ex-name">${App.escHtml(ex.name)}</span>
+          <span class="mode-tag ${ex.mode}">${ex.mode==='vbt'?'VBT':'Load'}</span>
+          <span class="ex-meta num">${ex.sets.length}×</span>
+          <span class="chev">▾</span>
+        </button>
+        <div class="ex-body">
+          <div class="set-grid">
+            ${ex.mode==='vbt'
+              ?'<div class="hdr grid-vbt"><span>#</span><span>reps</span><span>kg</span><span>m/s</span><span>W mean</span><span>W peak</span><span></span></div>'
+              :'<div class="hdr grid-load"><span>#</span><span>reps</span><span>kg</span><span></span></div>'}
+            ${ex.sets.map((st,i)=>App.setRowHTML(ex,st,i)).join('')}
+          </div>
+          <div class="ex-stats">${App.exStatsHTML(ex)}</div>
+          <div class="ex-actions">
+            <button class="btn btn-primary" onclick="App.dupSet('${ex.id}')">Duplicate last set</button>
+            <button class="btn btn-ghost" onclick="App.newSet('${ex.id}')">Empty set</button>
+          </div>
+          <button class="ex-remove" onclick="App.removeEx('${ex.id}')">Remove exercise</button>
+        </div>`;
+      host.appendChild(card);
+    });
+    App.pulse();
+  },
+  exStatsHTML(ex){
+    const s=App.exStats(ex);
+    return `<div>Tonnage <b class="num">${s.tonnage} kg</b></div>`+
+      (ex.mode==='vbt'?`
+        <div>Velocity loss <b class="num ${s.vloss>=20?'drop-warn':''}">${s.vloss===null?'—':s.vloss+'%'}</b></div>
+        <div>Power loss <b class="num ${s.ploss>=20?'drop-warn':''}">${s.ploss===null?'—':s.ploss+'%'}</b></div>`:'');
+  },
+  setRowHTML(ex,st,i){
+    /* type=text + inputmode=decimal so a comma reaches parseNum instead of
+       being swallowed by the browser's number validation. */
+    const f=(field,ph)=>`<input type="text" inputmode="decimal" class="numfield" placeholder="${ph}" value="${st[field]??''}"
+      onchange="App.setField('${ex.id}',${i},'${field}',this.value)">`;
+    if(ex.mode==='vbt'){
+      return `<div class="set-row grid-vbt"><span class="set-no">${i+1}</span>${f('reps','—')}${f('kg','—')}${f('mv','.00')}${f('mp','—')}${f('pp','—')}<button class="set-del" onclick="App.delSet('${ex.id}',${i})">×</button></div>`;
+    }
+    return `<div class="set-row grid-load"><span class="set-no">${i+1}</span>${f('reps','—')}${f('kg','—')}<button class="set-del" onclick="App.delSet('${ex.id}',${i})">×</button></div>`;
+  },
+  toggleEx(id){
+    const ex=App.ex(id); if(!ex) return;
+    ex.open=!ex.open;
+    const card=document.querySelector('[data-ex="'+id+'"]');
+    if(card) card.classList.toggle('open',ex.open);
+    Store.save();
+  },
+  ex(id){ return S.exercises.find(e=>e.id===id); },
+
+  setField(id,i,field,val){
+    const ex=App.ex(id); if(!ex) return;
+    const parsed=parseNum(val);
+    ex.sets[i][field]=parsed;
+    Store.save();
+    /* Reflect the normalised value back so a typed comma shows as a dot
+       rather than silently reverting to blank. */
+    App.refreshStats(id);
+  },
+  /* Updates only this card's stats + the pulse. The old build called
+     renderExercises() here, destroying and rebuilding every input on the
+     screen after each value entry. */
+  refreshStats(id){
+    const ex=App.ex(id); if(!ex) return;
+    const card=document.querySelector('[data-ex="'+id+'"]');
+    if(card){
+      const stats=card.querySelector('.ex-stats');
+      if(stats) stats.innerHTML=App.exStatsHTML(ex);
+      const meta=card.querySelector('.ex-meta');
+      if(meta) meta.textContent=ex.sets.length+'×';
+    }
+    App.pulse();
+  },
+  dupSet(id){
+    const ex=App.ex(id);
+    const last=ex.sets[ex.sets.length-1];
+    const copy=Object.assign({},last);
+    if(ex.mode==='vbt'){ copy.mv=null; copy.mp=null; copy.pp=null; }
+    ex.sets.push(copy);
+    Store.save(); App.renderExercises();
+  },
+  newSet(id){
+    const ex=App.ex(id);
+    ex.sets.push(App.blankSet(ex.mode));
+    Store.save(); App.renderExercises();
+  },
+  delSet(id,i){
+    const ex=App.ex(id);
+    ex.sets.splice(i,1);
+    if(!ex.sets.length) ex.sets.push(App.blankSet(ex.mode));
+    Store.save(); App.renderExercises();
+  },
+  removeEx(id){
+    S.exercises=S.exercises.filter(e=>e.id!==id);
+    Store.save(); App.renderExercises();
+  },
+  setHasData(s){ return s.reps!=null||s.kg!=null||s.mv!=null||s.mp!=null||s.pp!=null; },
+  exStats(ex){
+    let tonnage=0;
+    ex.sets.forEach(s=>{ if(s.reps&&s.kg) tonnage+=s.reps*s.kg; });
+    let vloss=null,ploss=null,topLoad=0,bestMv=0,bestPp=0;
+    const kgs=ex.sets.map(s=>s.kg).filter(v=>v!=null);
+    if(kgs.length) topLoad=Math.max(...kgs);
+    if(ex.mode==='vbt'){
+      const mv=ex.sets.map(s=>s.mv).filter(v=>v!=null);
+      const mp=ex.sets.map(s=>s.mp).filter(v=>v!=null);
+      const pp=ex.sets.map(s=>s.pp).filter(v=>v!=null);
+      if(mv.length) bestMv=Math.max(...mv);
+      if(pp.length) bestPp=Math.max(...pp);
+      if(mv.length>=2&&mv[0]>0) vloss=Math.round((1-mv[mv.length-1]/mv[0])*100);
+      if(mp.length>=2&&mp[0]>0) ploss=Math.round((1-mp[mp.length-1]/mp[0])*100);
+    }
+    return {tonnage:Math.round(tonnage),vloss,ploss,topLoad,bestMv,bestPp};
+  },
+  pulse(){
+    let t=0,sets=0;
+    S.exercises.forEach(ex=>{ t+=App.exStats(ex).tonnage; sets+=ex.sets.filter(App.setHasData).length; });
+    document.getElementById('pTonnage').textContent=t.toLocaleString();
+    document.getElementById('pSets').textContent=sets;
+    document.getElementById('pEx').textContent=S.exercises.length;
+  },
+
+  /* ---- checkout ---- */
+  startCheckout(){
+    if(!S.exercises.length && !confirm('No exercises logged. Continue to checkout anyway?')) return;
+    S.phase='checkout'; Store.save();
+    document.getElementById('coWho').textContent=S.client.full_name.split(' ')[0];
+    App.renderZones();
+    App.markScale('rpeScale',S.checkout.session_rpe);
+    App.markScale('energyScale',S.checkout.energy_post);
+    App.checkoutGate();
+    App.show('checkoutScreen');
+  },
+  renderZones(){
+    const g=document.getElementById('zoneGrid'); g.innerHTML='';
+    ZONES.forEach(z=>{
+      const sev=S.checkout.soreness[z]||0;
+      const b=document.createElement('button');
+      b.className='zone'+(sev?' lvl'+sev:'');
+      b.innerHTML=z+(sev?'<span class="sev">'+sev+'</span>':'');
+      b.onclick=()=>{ sevZone=z; document.getElementById('sevTitle').textContent=z;
+        document.getElementById('sevSheet').classList.add('open');
+        App.markScale('sevScale',sev);
+      };
+      g.appendChild(b);
+    });
+  },
+  setSeverity(v){
+    if(v===0) delete S.checkout.soreness[sevZone];
+    else S.checkout.soreness[sevZone]=v;
+    Store.save();
+    document.getElementById('sevSheet').classList.remove('open');
+    App.renderZones();
+  },
+  checkoutGate(){
+    document.getElementById('coDone').disabled=!(S.checkout.session_rpe!==null && S.checkout.energy_post!==null);
+  },
+  finishCheckout(){
+    S.phase='validate'; Store.save();
+    App.buildSummary();
+    App.show('validateScreen');
+  },
+
+  /* ---- validate & submit ---- */
+  buildSummary(){
+    document.getElementById('vTitle').textContent=S.client.full_name+' — '+new Date().toLocaleDateString();
+    const durMin=S.started_at?Math.max(1,Math.round((Date.now()-new Date(S.started_at))/60000)):60;
+    document.getElementById('vDuration').value=durMin;
+    let t=0; S.exercises.forEach(ex=>t+=App.exStats(ex).tonnage);
+    const sore=Object.entries(S.checkout.soreness).map(([z,s])=>z+' '+s).join(', ')||'None reported';
+    document.getElementById('vSummary').innerHTML=`
+      <div class="sum-line"><span>Readiness (pre)</span><b class="num">${S.readiness_pre}/5</b></div>
+      <div class="sum-line"><span>Exercises</span><b class="num">${S.exercises.length}</b></div>
+      <div class="sum-line"><span>Session tonnage</span><b class="num">${t.toLocaleString()} kg</b></div>
+      <div class="sum-line"><span>Session RPE</span><b class="num">${S.checkout.session_rpe}/10</b></div>
+      <div class="sum-line"><span>Energy (post)</span><b class="num">${S.checkout.energy_post}/5</b></div>
+      <div class="sum-line"><span>Soreness</span><b style="text-align:right;max-width:60%">${App.escHtml(sore)}</b></div>
+      <div class="sum-line"><span>Coach rating</span><b class="num">${S.coach_rating??'—'}${S.coach_rating!=null?'/5':''}</b></div>`;
+  },
+
+  /* Payload construction split out of submit() so it can also be copied
+     to the clipboard for manual recovery. */
+  buildPayload(){
+    const durRaw=parseNum(document.getElementById('vDuration').value);
+    const duration=(durRaw&&durRaw>0)?Math.round(durRaw):60;
+    const rpe=S.checkout.session_rpe;
+    // serialization & escaping at source:
+    // - *_json fields are JSON pre-escaped (\" form) for direct embedding in Make jsonString bodies
+    // - free text: double quotes -> apostrophes, newlines -> ' / '
+    const escJson=o=>JSON.stringify(o).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+    const escTxt=s=>(s||'').replace(/"/g,"'").replace(/\\/g,'/').replace(/\r?\n/g,' / ').trim();
+    let tonnage=0; const exercises=S.exercises.map((ex,idx)=>{
+      const st=App.exStats(ex); tonnage+=st.tonnage;
+      const sets=ex.sets.filter(App.setHasData);
+      return {
+        order:idx+1, name:escTxt(ex.name), mode:ex.mode,
+        sets, sets_json:escJson(sets), set_count:sets.length,
+        tonnage_kg:st.tonnage, top_load_kg:st.topLoad, best_mv:st.bestMv, best_pp:st.bestPp,
+        velocity_loss_pct:st.vloss===null?0:st.vloss, power_loss_pct:st.ploss===null?0:st.ploss
+      };
+    });
+    const sorenessArr=Object.entries(S.checkout.soreness).map(([zone,severity])=>({zone,severity:Number(severity)}));
+    const maxSore=sorenessArr.reduce((m,s)=>Math.max(m,s.severity),0);
+    const priorityFlag = (rpe!==null && rpe>=9) || maxSore>=4;
+    return {
+      session_id:S.session_id,
+      client_id:S.client.client_id,
+      client_name:S.client.full_name,
+      client_page_id:S.client.notion_page_id||'',
+      date:(S.started_at||new Date().toISOString()).slice(0,10),
+      started_at:S.started_at,
+      ended_at:new Date().toISOString(),
+      duration_min:duration,
+      readiness_pre:S.readiness_pre,
+      readiness_timestamp:S.readiness_ts,
+      session_rpe:rpe,
+      session_load:rpe*duration,
+      energy_post:S.checkout.energy_post,
+      soreness:sorenessArr,
+      soreness_json:escJson(sorenessArr),
+      priority_flag:priorityFlag,
+      client_note:escTxt(S.checkout.client_note),
+      coach_rating:S.coach_rating===null?-1:S.coach_rating,
+      coach_notes:escTxt(S.coach_notes),
+      session_tonnage_kg:Math.round(tonnage),
+      exercise_count:exercises.length,
+      exercises
+    };
+  },
+
+  async submit(){
+    if(isSubmitting) return;
+    isSubmitting=true;
+    const btn=document.getElementById('vSend');
+    btn.disabled=true; btn.textContent='Saving…';
+
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),SUBMIT_TIMEOUT_MS);
+
+    try{
+      const payload=App.buildPayload();
+      const body=JSON.stringify(payload);
+      console.log('[S14 payload]',payload);
+
+      const r=await fetch(WEBHOOK_SUBMIT,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body,
+        signal:controller.signal
+      });
+      if(!r.ok){
+        const txt=await r.text().catch(()=>'');
+        throw new Error('Make returned HTTP '+r.status+(txt?' — '+txt.slice(0,160):''));
+      }
+
+      /* Archive first, then clear the active session. Never delete the only
+         copy on the strength of a 200 that arrives before the Notion writes. */
+      Store.archive(payload);
+      Store.clear();
+      clearInterval(timerInt);
+      document.getElementById('archiveLink').style.display='block';
+      document.getElementById('doneSub').textContent=
+        S.client.full_name+' · '+payload.session_tonnage_kg.toLocaleString()+' kg · sRPE '+payload.session_rpe+' · load '+payload.session_load;
+      App.show('doneScreen');
+
+    }catch(e){
+      const msg = e.name==='AbortError'
+        ? 'No response from Make after '+(SUBMIT_TIMEOUT_MS/1000)+'s.'
+        : e.message;
+      console.error('[MANA3] Session submit failed:',e);
+      App.toast('Not saved — '+msg+' Session kept on this device.');
+      btn.disabled=false; btn.textContent='Validate & save session';
+
+    }finally{
+      clearTimeout(timer);
+      isSubmitting=false;
+    }
+  },
+
+  reset(){
+    S=blankState(); Store.clear();
+    clearInterval(timerInt);
+    document.getElementById('coachNotes').value='';
+    document.getElementById('clientNote').value='';
+    document.getElementById('exList').innerHTML='';
+    ['readyScale','coachScale','rpeScale','energyScale'].forEach(id=>
+      document.getElementById(id).querySelectorAll('button').forEach(b=>b.classList.remove('sel')));
+    App.show('clientScreen');
+    App.loadClients();
+  },
+
+  /* ---- resume after refresh ---- */
+  restoreUI(){
+    document.getElementById('coachNotes').value=S.coach_notes||'';
+    document.getElementById('clientNote').value=S.checkout.client_note||'';
+    App.markScale('coachScale',S.coach_rating);
+    if(S.phase==='ready'){ document.getElementById('readyWho').textContent=S.client.full_name; App.show('readyScreen'); }
+    else if(S.phase==='console'){ App.enterConsole(); }
+    else if(S.phase==='checkout'){ App.enterConsole(); App.startCheckout(); }
+    else if(S.phase==='validate'){ App.enterConsole(); App.buildSummary(); App.show('validateScreen'); }
+  }
+};
+
+/* ================= INIT ================= */
+document.getElementById('buildTag').textContent='BUILD '+BUILD;
+console.log('[MANA3] Coach console — build '+BUILD);
+App.initPin();
+App.initScales();
+</script>
+</body>
+</html>
