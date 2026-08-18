@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MANA³ | Structure Assessment</title>
+<style>
+  :root {
+    --ink: #1A1A2E;
+    --bone: #F5F0EB;
+    --subdued: #6B7280;
+    --manaBlue: #4A90D9;
+    --manaRed: #E74C3C;
+    --manaGreen: #2ECC71;
+    --manaYellow: #F1C40F;
+    --border: #D1D5DB;
+    --card: #FFFFFF;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bone);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--manaBlue); outline-offset: 2px; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--ink);
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .header-client {
+    font-size: 13px;
+    color: var(--manaBlue);
+    font-weight: 500;
+    max-width: 140px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { padding: 12px 20px 8px; background: #fff; border-bottom: 1px solid var(--border); }
+  .progress-steps { display: flex; gap: 4px; }
+  .progress-step {
+    flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s;
+  }
+  .progress-step.done { background: var(--manaGreen); }
+  .progress-step.active { background: var(--manaBlue); }
+  .progress-label { font-size: 11px; color: var(--subdued); margin-top: 6px; }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 16px 20px 120px; }
+  .section.active { display: block; }
+  .section-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+  .badge-rom { background: rgba(74,144,217,0.12); color: var(--manaBlue); }
+  .badge-fms { background: rgba(46,204,113,0.12); color: var(--manaGreen); }
+  .badge-balance { background: rgba(241,196,15,0.12); color: #B7950B; }
+  .badge-prac { background: rgba(231,76,60,0.12); color: var(--manaRed); }
+  .section-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .section-desc { font-size: 13px; color: var(--subdued); margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+  .card-label {
+    font-size: 13px; font-weight: 600; margin-bottom: 2px;
+  }
+  .card-hint { font-size: 11px; color: var(--subdued); margin-bottom: 12px; }
+  .card-row { display: flex; gap: 12px; align-items: center; }
+  .card-col { flex: 1; }
+  .card-col label {
+    display: block; font-size: 11px; color: var(--subdued);
+    margin-bottom: 4px; font-weight: 500;
+  }
+  .card-col input[type="number"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 16px; font-family: inherit;
+    background: var(--bone); color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .card-col input::-webkit-outer-spin-button,
+  .card-col input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .card-col input:focus { outline: none; border-color: var(--manaBlue); background: #fff; }
+
+  .unit-tag {
+    font-size: 10px; color: var(--subdued); text-align: center;
+    padding-top: 22px; min-width: 24px;
+  }
+
+  /* ── FLAGS ── */
+  .flag-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .flag-toggle {
+    width: 44px; height: 26px; border-radius: 13px;
+    background: var(--border); position: relative; cursor: pointer;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .flag-toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .flag-toggle.on { background: var(--manaRed); }
+  .flag-toggle.on::after { transform: translateX(18px); }
+  .flag-label { font-size: 12px; color: var(--subdued); }
+
+  /* ── FMS SCORING ── */
+  .fms-scores { display: flex; gap: 6px; margin-top: 4px; }
+  .fms-btn {
+    width: 44px; height: 44px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--bone);
+    font-size: 18px; font-weight: 600; color: var(--subdued);
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fms-btn.selected {
+    border-color: var(--manaGreen); background: rgba(46,204,113,0.12);
+    color: var(--manaGreen);
+  }
+  .fms-btn.selected-0 {
+    border-color: var(--manaRed); background: rgba(231,76,60,0.08);
+    color: var(--manaRed);
+  }
+
+  /* ── SELECT + TEXTAREA ── */
+  select, textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    background: var(--bone); color: var(--ink);
+  }
+  select:focus, textarea:focus { outline: none; border-color: var(--manaBlue); background: #fff; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ── IMPRESSION SLIDER ── */
+  .impression-wrap { padding: 8px 0; }
+  .impression-track { position: relative; padding: 0 4px; }
+  .impression-range {
+    -webkit-appearance: none; width: 100%; height: 6px;
+    border-radius: 3px; background: var(--border); outline: none;
+  }
+  .impression-range::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 28px; height: 28px;
+    border-radius: 50%; background: var(--manaBlue); cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .impression-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+  .impression-labels span { font-size: 10px; color: var(--subdued); }
+  .impression-value {
+    text-align: center; font-size: 32px; font-weight: 700;
+    color: var(--manaBlue); margin-bottom: 8px;
+  }
+
+  /* ── NOTES ── */
+  .notes-card { margin-top: 8px; }
+  .notes-toggle {
+    font-size: 12px; color: var(--manaBlue); cursor: pointer;
+    padding: 8px 0; font-weight: 500;
+  }
+  .notes-area { display: none; margin-top: 8px; }
+  .notes-area.show { display: block; }
+
+  /* ── NAV ── */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; border-top: 1px solid var(--border);
+    padding: 12px 20px; display: flex; gap: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .nav-btn {
+    flex: 1; padding: 14px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-back { background: var(--bone); color: var(--subdued); }
+  .btn-next { background: var(--manaBlue); color: #fff; }
+  .btn-submit { background: var(--manaGreen); color: #fff; }
+  .btn-next:active, .btn-submit:active { transform: scale(0.98); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── LOADING / SUCCESS ── */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(26,26,46,0.85); z-index: 200;
+    align-items: center; justify-content: center; flex-direction: column;
+    padding: 32px;
+  }
+  .overlay.show { display: flex; }
+  .overlay-icon { font-size: 56px; margin-bottom: 16px; }
+  .overlay-text { color: #fff; font-size: 18px; font-weight: 600; text-align: center; }
+  .overlay-sub {
+    color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 8px;
+    text-align: center; max-width: 340px; line-height: 1.5;
+  }
+  .overlay-detail {
+    color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 14px;
+    text-align: center; max-width: 340px; line-height: 1.5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-word;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: var(--manaBlue); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── CLIENT SELECT SECTION ── */
+  .client-select-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 50vh; padding: 40px 20px;
+  }
+  .client-select-wrap .section-title { text-align: center; margin-bottom: 20px; }
+  .client-select-wrap select { max-width: 320px; font-size: 16px; padding: 14px; }
+  .client-loading { font-size: 13px; color: var(--subdued); text-align: center; line-height: 1.5; }
+
+  /* ── PIN LOCK ── */
+  #pinOverlay {
+    position: fixed; inset: 0; background: var(--ink);
+    z-index: 999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 40px 20px;
+  }
+  #pinOverlay .pin-logo { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.3); margin-bottom: 48px; text-transform: uppercase; }
+  #pinOverlay .pin-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  #pinOverlay .pin-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 32px; }
+  #pinOverlay .pin-dots { display: flex; gap: 14px; margin-bottom: 32px; }
+  #pinOverlay .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3); background: transparent;
+    transition: all 0.15s;
+  }
+  #pinOverlay .pin-dot.filled { background: var(--manaBlue); border-color: var(--manaBlue); }
+  #pinOverlay .pin-dot.error { background: var(--manaRed); border-color: var(--manaRed); }
+  #pinOverlay .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 12px; }
+  #pinOverlay .pin-key {
+    height: 72px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.07); color: #fff;
+    font-size: 24px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #pinOverlay .pin-key:active { background: rgba(74,144,217,0.3); transform: scale(0.95); }
+  #pinOverlay .pin-key.del { font-size: 18px; color: rgba(255,255,255,0.5); }
+  #pinOverlay .pin-error { font-size: 13px; color: var(--manaRed); margin-top: 20px; min-height: 20px; }
+  #pinOverlay .pin-build {
+    position: absolute; bottom: 20px; font-size: 10px;
+    color: rgba(255,255,255,0.18); letter-spacing: 1px;
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ── PIN LOCK ── -->
+<div id="pinOverlay">
+  <div class="pin-logo">MANA³</div>
+  <div class="pin-title">Practitioner Access</div>
+  <div class="pin-sub">Enter your PIN to continue</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key" onclick="pinKey('')"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-build" id="pinBuild"></div>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div>
+    <div class="header-title">MANA³ Structure</div>
+    <div class="header-sub">Practitioner Assessment</div>
+  </div>
+  <div class="header-client" id="headerClient"></div>
+</div>
+
+<!-- ── PROGRESS ── -->
+<div class="progress-wrap" id="progressWrap" style="display:none">
+  <div class="progress-steps">
+    <div class="progress-step" data-step="0"></div>
+    <div class="progress-step" data-step="1"></div>
+    <div class="progress-step" data-step="2"></div>
+    <div class="progress-step" data-step="3"></div>
+    <div class="progress-step" data-step="4"></div>
+  </div>
+  <div class="progress-label" id="progressLabel"></div>
+</div>
+
+<!-- ═══ SECTION 0: CLIENT SELECT ═══ -->
+<div class="section active" id="sec-0">
+  <div class="client-select-wrap">
+    <div class="section-title">Select Client</div>
+    <div id="clientLoading" class="client-loading">Loading active clients...</div>
+    <select id="clientSelect" style="display:none">
+      <option value="">Choose a client...</option>
+    </select>
+  </div>
+</div>
+
+<!-- ═══ SECTION 1: ROM BATTERY ═══ -->
+<div class="section" id="sec-1">
+  <span class="section-badge badge-rom">ROM Battery</span>
+  <div class="section-title">Range of Motion</div>
+  <div class="section-desc">6 tests covering ankle, hip, spine, shoulder, and neck. Enter values as you measure. Left side first.</div>
+
+  <!-- Knee to Wall -->
+  <div class="card">
+    <div class="card-label">1. Knee-to-Wall</div>
+    <div class="card-hint">Ankle dorsiflexion. Distance from big toe to wall (cm).</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="rom_ktw_left" step="0.5" min="0" max="20" inputmode="decimal">
+      </div>
+      <div class="unit-tag">cm</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="rom_ktw_right" step="0.5" min="0" max="20" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- ASLR -->
+  <div class="card">
+    <div class="card-label">2. Active Straight Leg Raise</div>
+    <div class="card-hint">Hip dissociation. Degrees of elevation with opposite leg flat.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="rom_aslr_left" step="1" min="0" max="120" inputmode="numeric">
+      </div>
+      <div class="unit-tag">°</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="rom_aslr_right" step="1" min="0" max="120" inputmode="numeric">
+      </div>
+    </div>
+    <div class="flag-row">
+      <div class="flag-toggle" id="flag_pelvic" onclick="toggleFlag(this)"></div>
+      <div class="flag-label">Pelvic compensation observed</div>
+    </div>
+  </div>
+
+  <!-- Hip 90/90 -->
+  <div class="card">
+    <div class="card-label">3. Hip 90/90 Rotation</div>
+    <div class="card-hint">Internal and external rotation at 90° hip flexion.</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--subdued);margin-bottom:6px;">Internal Rotation</div>
+      <div class="card-row">
+        <div class="card-col">
+          <label>Left</label>
+          <input type="number" id="rom_hip_ir_left" step="1" min="0" max="90" inputmode="numeric">
+        </div>
+        <div class="unit-tag">°</div>
+        <div class="card-col">
+          <label>Right</label>
+          <input type="number" id="rom_hip_ir_right" step="1" min="0" max="90" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--subdued);margin-bottom:6px;">External Rotation</div>
+      <div class="card-row">
+        <div class="card-col">
+          <label>Left</label>
+          <input type="number" id="rom_hip_er_left" step="1" min="0" max="90" inputmode="numeric">
+        </div>
+        <div class="unit-tag">°</div>
+        <div class="card-col">
+          <label>Right</label>
+          <input type="number" id="rom_hip_er_right" step="1" min="0" max="90" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thoracic Rotation -->
+  <div class="card">
+    <div class="card-label">4. Seated Thoracic Rotation</div>
+    <div class="card-hint">Mid-back rotation from neutral. Client seated, arms crossed.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="rom_thoracic_left" step="1" min="0" max="90" inputmode="numeric">
+      </div>
+      <div class="unit-tag">°</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="rom_thoracic_right" step="1" min="0" max="90" inputmode="numeric">
+      </div>
+    </div>
+    <div class="flag-row">
+      <div class="flag-toggle" id="flag_lumbar" onclick="toggleFlag(this)"></div>
+      <div class="flag-label">Lumbar compensation observed</div>
+    </div>
+  </div>
+
+  <!-- Shoulder Flexion -->
+  <div class="card">
+    <div class="card-label">5. Active Shoulder Flexion (Supine)</div>
+    <div class="card-hint">Overhead reach while lying flat. Degrees from table surface.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="rom_shoulder_left" step="1" min="0" max="180" inputmode="numeric">
+      </div>
+      <div class="unit-tag">°</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="rom_shoulder_right" step="1" min="0" max="180" inputmode="numeric">
+      </div>
+    </div>
+    <div class="flag-row">
+      <div class="flag-toggle" id="flag_rib" onclick="toggleFlag(this)"></div>
+      <div class="flag-label">Rib flare observed</div>
+    </div>
+  </div>
+
+  <!-- Cervical Rotation -->
+  <div class="card">
+    <div class="card-label">6. Cervical Rotation</div>
+    <div class="card-hint">Neck rotation left and right from neutral. Degrees.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="rom_cervical_left" step="1" min="0" max="90" inputmode="numeric">
+      </div>
+      <div class="unit-tag">°</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="rom_cervical_right" step="1" min="0" max="90" inputmode="numeric">
+      </div>
+    </div>
+    <div class="flag-row">
+      <div class="flag-toggle" id="flag_cervical_pain" onclick="toggleFlag(this)"></div>
+      <div class="flag-label">Pain reported during test</div>
+    </div>
+  </div>
+
+  <!-- ROM Notes -->
+  <div class="notes-card">
+    <div class="notes-toggle" onclick="toggleNotes(this)">+ Add ROM notes</div>
+    <div class="notes-area">
+      <textarea id="rom_notes" placeholder="Observations, compensations, asymmetry patterns..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 2: FMS + GRIP ═══ -->
+<div class="section" id="sec-2">
+  <span class="section-badge badge-fms">Functional Movement</span>
+  <div class="section-title">FMS + Grip Strength</div>
+  <div class="section-desc">Score each movement 0-3. Bilateral movements scored per side. Grip with dynamometer (kg).</div>
+
+  <!-- FMS: Deep Squat -->
+  <div class="card">
+    <div class="card-label">1. Deep Squat</div>
+    <div class="card-hint">Bilateral. Score the overall pattern.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Score</label>
+        <div class="fms-scores" data-field="fms_deep_squat">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: Hurdle Step -->
+  <div class="card">
+    <div class="card-label">2. Hurdle Step</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <div class="fms-scores" data-field="fms_hurdle_left">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <label>Right</label>
+        <div class="fms-scores" data-field="fms_hurdle_right">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: Inline Lunge -->
+  <div class="card">
+    <div class="card-label">3. Inline Lunge</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <div class="fms-scores" data-field="fms_lunge_left">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <label>Right</label>
+        <div class="fms-scores" data-field="fms_lunge_right">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: Shoulder Mobility -->
+  <div class="card">
+    <div class="card-label">4. Shoulder Mobility</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <div class="fms-scores" data-field="fms_shoulder_left">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <label>Right</label>
+        <div class="fms-scores" data-field="fms_shoulder_right">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: ASLR -->
+  <div class="card">
+    <div class="card-label">5. Active Straight Leg Raise</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <div class="fms-scores" data-field="fms_aslr_left">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <label>Right</label>
+        <div class="fms-scores" data-field="fms_aslr_right">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: Trunk Stability Push-up -->
+  <div class="card">
+    <div class="card-label">6. Trunk Stability Push-up</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Score</label>
+        <div class="fms-scores" data-field="fms_pushup">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS: Rotary Stability -->
+  <div class="card">
+    <div class="card-label">7. Rotary Stability</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <div class="fms-scores" data-field="fms_rotary_left">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <label>Right</label>
+        <div class="fms-scores" data-field="fms_rotary_right">
+          <div class="fms-btn" data-val="0" onclick="scoreFMS(this)">0</div>
+          <div class="fms-btn" data-val="1" onclick="scoreFMS(this)">1</div>
+          <div class="fms-btn" data-val="2" onclick="scoreFMS(this)">2</div>
+          <div class="fms-btn" data-val="3" onclick="scoreFMS(this)">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grip Strength -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-label">Grip Strength</div>
+    <div class="card-hint">Dynamometer, best of 2 attempts per side (kg).</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left</label>
+        <input type="number" id="grip_left" step="0.5" min="0" max="100" inputmode="decimal">
+      </div>
+      <div class="unit-tag">kg</div>
+      <div class="card-col">
+        <label>Right</label>
+        <input type="number" id="grip_right" step="0.5" min="0" max="100" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- FMS Notes -->
+  <div class="notes-card">
+    <div class="notes-toggle" onclick="toggleNotes(this)">+ Add FMS notes</div>
+    <div class="notes-area">
+      <textarea id="fms_notes" placeholder="Movement quality observations, compensations..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 3: BALANCE ═══ -->
+<div class="section" id="sec-3">
+  <span class="section-badge badge-balance">Balance</span>
+  <div class="section-title">Single-Leg Balance</div>
+  <div class="section-desc">Eyes closed, hands on hips. Record best time of 3 attempts per side (seconds). Max 60s.</div>
+
+  <div class="card">
+    <div class="card-label">Single-Leg Stand (Eyes Closed)</div>
+    <div class="card-hint">Best of 3 attempts. Stop timer on foot touch or loss of balance.</div>
+    <div class="card-row">
+      <div class="card-col">
+        <label>Left (seconds)</label>
+        <input type="number" id="balance_left" step="0.1" min="0" max="60" inputmode="decimal">
+      </div>
+      <div class="unit-tag">sec</div>
+      <div class="card-col">
+        <label>Right (seconds)</label>
+        <input type="number" id="balance_right" step="0.1" min="0" max="60" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- Balance Notes -->
+  <div class="notes-card">
+    <div class="notes-toggle" onclick="toggleNotes(this)">+ Add balance notes</div>
+    <div class="notes-area">
+      <textarea id="balance_notes" placeholder="Compensatory strategies, ankle wobble, hip drift..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 4: PRACTITIONER READ ═══ -->
+<div class="section" id="sec-4">
+  <span class="section-badge badge-prac">Practitioner</span>
+  <div class="section-title">Your Structural Read</div>
+  <div class="section-desc">Your qualitative assessment. This informs the AI observation engine's interpretation of the data.</div>
+
+  <!-- Impression slider -->
+  <div class="card">
+    <div class="card-label">Overall Structural Impression</div>
+    <div class="card-hint">Your gestalt read of this client's structural coherence today.</div>
+    <div class="impression-wrap">
+      <div class="impression-value" id="impressionVal">5</div>
+      <div class="impression-track">
+        <input type="range" class="impression-range" id="prac_impression" min="1" max="10" value="5"
+          oninput="document.getElementById('impressionVal').textContent=this.value">
+      </div>
+      <div class="impression-labels">
+        <span>1 — Significant concern</span>
+        <span>10 — Excellent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction -->
+  <div class="card">
+    <div class="card-label">Direction of Change</div>
+    <div class="card-hint">Compared to the client's previous assessment (or your initial impression if first assessment).</div>
+    <select id="prac_direction">
+      <option value="">Select...</option>
+      <option value="Improving">Improving</option>
+      <option value="Stable">Stable</option>
+      <option value="Declining">Declining</option>
+    </select>
+  </div>
+
+  <!-- Concerns -->
+  <div class="card">
+    <div class="card-label">Primary Concern Areas</div>
+    <textarea id="prac_concerns" placeholder="e.g. Left hip IR significantly restricted. Cervical rotation asymmetry increasing."></textarea>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="card">
+    <div class="card-label">Recommendations</div>
+    <textarea id="prac_recommendations" placeholder="e.g. Prioritize hip mobility work. Consider manual therapy referral for cervical. Reduce overhead pressing volume."></textarea>
+  </div>
+
+  <!-- Urgent Flag -->
+  <div class="card">
+    <div class="flag-row">
+      <div class="flag-toggle" id="flag_urgent" onclick="toggleFlag(this)"></div>
+      <div>
+        <div class="flag-label" style="font-weight:600;color:var(--manaRed)">Urgent Flag</div>
+        <div class="flag-label">Requires immediate attention or referral</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAYS ═══ -->
+<div class="overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="overlay-text">Saving assessment...</div>
+</div>
+<div class="overlay" id="successOverlay">
+  <div class="overlay-icon">✓</div>
+  <div class="overlay-text">Assessment saved</div>
+  <div class="overlay-sub" id="successSub"></div>
+</div>
+<div class="overlay" id="errorOverlay">
+  <div class="overlay-icon">✕</div>
+  <div class="overlay-text" id="errorText">Assessment not saved</div>
+  <div class="overlay-sub">Your entries are still on screen. Tap anywhere to try again.</div>
+  <div class="overlay-detail" id="errorDetail"></div>
+</div>
+
+<!-- ═══ NAV BAR ═══ -->
+<div class="nav-bar">
+  <button class="nav-btn btn-back" id="btnBack" onclick="navigate(-1)" style="display:none">Back</button>
+  <button class="nav-btn btn-next" id="btnNext" onclick="navigate(1)" disabled>Select a client to begin</button>
+</div>
+
+<script>
+// ═══ BUILD ═══
+// Bump this on every deploy. It renders on the PIN screen so you can confirm
+// at a glance that Cloudflare actually served the new file.
+const BUILD = '2026-08-18.1';
+
+// ═══ CONFIG ═══
+const WEBHOOK_CLIENTS = 'https://hook.eu1.make.com/acz53me5j3sbrftxcaxum4tbxdphs1a4';
+const WEBHOOK_SUBMIT  = 'https://hook.eu1.make.com/jh6hqg42mdr0ybg2ihrisl3n3jyo4jt3';
+const SUBMIT_TIMEOUT_MS = 15000;
+
+// ═══ STATE ═══
+let currentStep = 0;
+const totalSteps = 5; // 0=client, 1=ROM, 2=FMS, 3=Balance, 4=Practitioner
+const stepLabels = ['Client', 'ROM Battery', 'FMS + Grip', 'Balance', 'Practitioner Read'];
+let fmsScores = {};
+let selectedClient = null;
+let isSubmitting = false;
+let hasSubmitted = false;
+
+// ═══ CLIENT LOADING ═══
+async function loadClients() {
+  const loading = document.getElementById('clientLoading');
+  try {
+    const res = await fetch(WEBHOOK_CLIENTS);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const sel = document.getElementById('clientSelect');
+
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.client_id;
+        opt.textContent = c.full_name + ' (' + c.client_id + ')';
+        opt.dataset.name = c.full_name;
+        sel.appendChild(opt);
+      });
+      loading.style.display = 'none';
+      sel.style.display = 'block';
+    } else {
+      loading.textContent = 'No active clients returned. Check S12A in Make.';
+    }
+  } catch (e) {
+    loading.textContent = 'Client list unavailable (' + e.message + '). Check S12A in Make, then reload.';
+    console.error('[MANA3] Client load failed:', e);
+  }
+}
+
+document.getElementById('clientSelect').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (this.value) {
+    selectedClient = { client_id: this.value, full_name: opt.dataset.name };
+    document.getElementById('headerClient').textContent = opt.dataset.name;
+  } else {
+    selectedClient = null;
+    document.getElementById('headerClient').textContent = '';
+  }
+  updateNav();
+});
+
+// ═══ NAVIGATION ═══
+// FIX (2026-08-18): the submit branch now runs BEFORE the bounds check.
+// Previously `if (next >= totalSteps) return;` sat first, so on the last step
+// (currentStep 4, next 5) the function returned before ever calling
+// submitAssessment(). The button did nothing, silently, with no network call
+// and no overlay — because every overlay lives inside submitAssessment().
+function navigate(dir) {
+  if (dir === 1 && currentStep === totalSteps - 1) {
+    submitAssessment();
+    return;
+  }
+
+  const next = currentStep + dir;
+  if (next < 0 || next >= totalSteps) return;
+
+  document.getElementById('sec-' + currentStep).classList.remove('active');
+  currentStep = next;
+  document.getElementById('sec-' + currentStep).classList.add('active');
+  updateNav();
+  window.scrollTo(0, 0);
+}
+
+function updateNav() {
+  const back = document.getElementById('btnBack');
+  const next = document.getElementById('btnNext');
+  const prog = document.getElementById('progressWrap');
+
+  if (currentStep === 0) {
+    back.style.display = 'none';
+    prog.style.display = 'none';
+  } else {
+    back.style.display = 'block';
+    prog.style.display = 'block';
+  }
+
+  if (currentStep === totalSteps - 1) {
+    next.className = 'nav-btn btn-submit';
+    if (hasSubmitted) {
+      next.textContent = 'Assessment saved ✓';
+      next.disabled = true;
+    } else {
+      next.textContent = isSubmitting ? 'Saving...' : 'Submit Assessment ✓';
+      next.disabled = isSubmitting;
+    }
+  } else if (currentStep === 0) {
+    next.className = 'nav-btn btn-next';
+    next.disabled = !selectedClient;
+    next.textContent = selectedClient ? 'Begin Assessment →' : 'Select a client to begin';
+  } else {
+    next.className = 'nav-btn btn-next';
+    next.textContent = 'Next →';
+    next.disabled = false;
+  }
+
+  // Progress bar
+  document.querySelectorAll('.progress-step').forEach((s, i) => {
+    s.className = 'progress-step';
+    if (i < currentStep) s.classList.add('done');
+    if (i === currentStep) s.classList.add('active');
+  });
+  document.getElementById('progressLabel').textContent =
+    stepLabels[currentStep] + ' (' + currentStep + '/' + (totalSteps - 1) + ')';
+}
+
+// ═══ FMS SCORING ═══
+function scoreFMS(btn) {
+  const parent = btn.closest('.fms-scores');
+  const field = parent.dataset.field;
+  const val = parseInt(btn.dataset.val);
+
+  parent.querySelectorAll('.fms-btn').forEach(b => {
+    b.className = 'fms-btn';
+  });
+  btn.classList.add(val === 0 ? 'selected-0' : 'selected');
+  fmsScores[field] = val;
+}
+
+// ═══ FLAGS ═══
+function toggleFlag(el) {
+  el.classList.toggle('on');
+}
+
+// ═══ NOTES ═══
+// Keeps the section-specific label ("+ Add ROM notes") instead of
+// collapsing every toggle to a generic "+ Add notes" after first use.
+function toggleNotes(el) {
+  const area = el.nextElementSibling;
+  if (!el.dataset.openLabel) {
+    el.dataset.openLabel = el.textContent.replace(/^\+\s*Add/, '− Hide');
+    el.dataset.closedLabel = el.textContent;
+  }
+  area.classList.toggle('show');
+  el.textContent = area.classList.contains('show') ? el.dataset.openLabel : el.dataset.closedLabel;
+}
+
+// ═══ DATE ═══
+// Local calendar date, not UTC. new Date().toISOString() shifts an
+// evening assessment in Geneva onto the following day.
+function localDateISO() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+// ═══ COLLECT DATA ═══
+function collectData() {
+  if (!selectedClient) throw new Error('No client selected');
+
+  const val = id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    if (el.type === 'number' || el.type === 'range') return el.value ? parseFloat(el.value) : null;
+    return el.value || null;
+  };
+  const flag = id => {
+    const el = document.getElementById(id);
+    return el ? el.classList.contains('on') : false;
+  };
+
+  // FMS composite: sum of min(L,R) for bilateral + unilateral scores
+  const fmsBilateral = [
+    ['fms_hurdle_left','fms_hurdle_right'],
+    ['fms_lunge_left','fms_lunge_right'],
+    ['fms_shoulder_left','fms_shoulder_right'],
+    ['fms_aslr_left','fms_aslr_right'],
+    ['fms_rotary_left','fms_rotary_right']
+  ];
+  let fmsComposite = (fmsScores['fms_deep_squat'] || 0) + (fmsScores['fms_pushup'] || 0);
+  fmsBilateral.forEach(([l, r]) => {
+    fmsComposite += Math.min(fmsScores[l] || 0, fmsScores[r] || 0);
+  });
+
+  return {
+    client_id: selectedClient.client_id,
+    client_name: selectedClient.full_name,
+    assessment_date: localDateISO(),
+    practitioner: 'Maxime Frechet',
+
+    // ROM
+    rom_ktw_left: val('rom_ktw_left'), rom_ktw_right: val('rom_ktw_right'),
+    rom_aslr_left: val('rom_aslr_left'), rom_aslr_right: val('rom_aslr_right'),
+    rom_hip_ir_left: val('rom_hip_ir_left'), rom_hip_ir_right: val('rom_hip_ir_right'),
+    rom_hip_er_left: val('rom_hip_er_left'), rom_hip_er_right: val('rom_hip_er_right'),
+    rom_thoracic_left: val('rom_thoracic_left'), rom_thoracic_right: val('rom_thoracic_right'),
+    rom_shoulder_left: val('rom_shoulder_left'), rom_shoulder_right: val('rom_shoulder_right'),
+    rom_cervical_left: val('rom_cervical_left'), rom_cervical_right: val('rom_cervical_right'),
+
+    // Flags
+    flag_pelvic_compensation: flag('flag_pelvic'),
+    flag_lumbar_compensation: flag('flag_lumbar'),
+    flag_rib_flare: flag('flag_rib'),
+    flag_cervical_pain: flag('flag_cervical_pain'),
+
+    // FMS
+    ...fmsScores,
+    fms_composite: fmsComposite,
+
+    // Grip
+    grip_left: val('grip_left'), grip_right: val('grip_right'),
+
+    // Balance
+    balance_left: val('balance_left'), balance_right: val('balance_right'),
+
+    // Practitioner
+    prac_impression: val('prac_impression'),
+    prac_direction: val('prac_direction'),
+    prac_concerns: val('prac_concerns'),
+    prac_recommendations: val('prac_recommendations'),
+    prac_urgent_flag: flag('flag_urgent'),
+
+    // Notes
+    rom_notes: val('rom_notes'),
+    fms_notes: val('fms_notes'),
+    balance_notes: val('balance_notes')
+  };
+}
+
+// ═══ SUBMIT ═══
+// Everything that can throw — including collectData() — is inside the try,
+// so no failure path can end in a silent no-op.
+async function submitAssessment() {
+  if (isSubmitting || hasSubmitted) return;
+  isSubmitting = true;
+  updateNav();
+
+  const loading = document.getElementById('loadingOverlay');
+  loading.classList.add('show');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+
+  try {
+    const data = collectData();
+    console.log('[MANA3] Submitting assessment', data);
+
+    const res = await fetch(WEBHOOK_SUBMIT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error('Make returned HTTP ' + res.status + (body ? ' — ' + body.slice(0, 200) : ''));
+    }
+
+    hasSubmitted = true;
+    loading.classList.remove('show');
+    document.getElementById('successSub').textContent =
+      selectedClient.full_name + ' — ' + data.assessment_date +
+      ' — FMS: ' + data.fms_composite + '/21';
+    document.getElementById('successOverlay').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('successOverlay').classList.remove('show');
+    }, 3000);
+
+  } catch (e) {
+    const msg = e.name === 'AbortError'
+      ? 'No response from Make after ' + (SUBMIT_TIMEOUT_MS / 1000) + ' seconds.'
+      : e.message;
+    console.error('[MANA3] Submit failed:', e);
+    loading.classList.remove('show');
+    document.getElementById('errorDetail').textContent = msg;
+    document.getElementById('errorOverlay').classList.add('show');
+
+  } finally {
+    clearTimeout(timer);
+    isSubmitting = false;
+    updateNav();
+  }
+}
+
+// Retry handler bound once, not re-bound inside the catch.
+document.getElementById('errorOverlay').addEventListener('click', function() {
+  this.classList.remove('show');
+  submitAssessment();
+});
+
+// ═══ PIN LOCK ═══
+const PIN = '1810';
+let pinEntry = '';
+
+function pinKey(digit) {
+  if (!digit || pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updateDots();
+  if (pinEntry.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updateDots();
+  document.getElementById('pinError').textContent = '';
+  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinEntry.length);
+  }
+}
+
+function checkPin() {
+  if (pinEntry === PIN) {
+    sessionStorage.setItem('mana3_auth', '1');
+    document.getElementById('pinOverlay').style.display = 'none';
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => {
+      d.classList.remove('filled');
+      d.classList.add('error');
+    });
+    document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
+    setTimeout(() => {
+      document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+      pinEntry = '';
+      updateDots();
+    }, 700);
+  }
+}
+
+// ═══ INIT ═══
+document.getElementById('pinBuild').textContent = 'BUILD ' + BUILD;
+console.log('[MANA3] Structure Assessment — build ' + BUILD);
+
+if (sessionStorage.getItem('mana3_auth') === '1') {
+  document.getElementById('pinOverlay').style.display = 'none';
+}
+
+loadClients();
+updateNav();
+</script>
+</body>
+</html>
