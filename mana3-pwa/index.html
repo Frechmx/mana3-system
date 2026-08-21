@@ -890,6 +890,9 @@ function renderWeeklyBrief(data) {
   document.getElementById('weekly-content').style.display = 'block';
 }
 
+// ═══ CYCLE INDICATORS ═══
+// No longer used by Today (removed in the Today rebuild). Kept because History
+// is scheduled for its own rebuild and these may return there.
 function cycleBar(label, value, leftLabel, rightLabel) {
   if (value === null || value === undefined) return '';
   // value is -3 to +3, convert to percentage position (0% = -3, 50% = 0, 100% = +3)
@@ -954,41 +957,181 @@ function renderCycleIndicators(ci) {
     </div>`;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TODAY SCREEN
+// Rebuilt: no 0-100 score, no layer bars, no cycle indicators, no
+// raw wearable chips. Three honest states, baseline-relative chips,
+// one observation.
+// ═══════════════════════════════════════════════════════════════
+
+// Protocol start date per client. This is the one element on the screen that
+// must never move for pipeline reasons, so it cannot be derived from any
+// record that a sync failure could touch.
+// TODO: source this from the Clients DB via data-api instead of hardcoding.
+const PROTOCOL_START = { 'MANA-TEST': '2026-04-30' };
+
+// Populated by fetchAndRender() from ?endpoint=baselines
+let baselineData = null;
+
+// The API now decides pending vs missing (data_state.py, FINAL_SYNC_HOUR).
+// The screen no longer guesses from the clock — that guess is what produced
+// "the watch didn't sync last night" on days the watch had synced fine and
+// Polar simply hadn't propagated the night yet.
+const API_STATE_TO_SCREEN = {
+  present: 'present',
+  partial: 'quiet',
+  pending: 'pending',
+  missing: 'missing'
+};
+
+const OVERNIGHT_KEYS = ['sleep_duration', 'hrv', 'rhr', 'respiration'];
+
+function protocolDay(clientId) {
+  const start = PROTOCOL_START[clientId];
+  if (!start) return null;
+  const ms = new Date(new Date().toDateString()).getTime()
+           - new Date(start + 'T00:00:00').getTime();
+  const d = Math.floor(ms / 86400000) + 1;
+  return d > 0 ? d : null;
+}
+
+function longDate(iso) {
+  const d = iso ? new Date(iso + 'T12:00:00') : new Date();
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function hasOvernightData(t) {
+  const w = (t && t.wearable) || {};
+  return OVERNIGHT_KEYS.some(k => w[k] != null && w[k] !== 0);
+}
+
+// Four engine states map straight onto four screens.
+//
+//   present  → band + chips + observation
+//   partial  → 'quiet': observation alone, no band, no chips
+//   pending  → collection window still open, nothing has arrived yet
+//   missing  → window closed, nothing arrived
+//
+// The mapping is the API's call, not the screen's. The fallback below only
+// fires if the API is older than this build.
+function resolveTodayState(t) {
+  const todayISO = new Date().toISOString().split('T')[0];
+  if (!t || t.date !== todayISO) return 'pending';
+  const mapped = API_STATE_TO_SCREEN[(t.data_state || '').toLowerCase()];
+  if (mapped) return mapped;
+  return hasOvernightData(t) ? 'present' : 'quiet';
+}
+
+function fmtBaselineValue(key, v) {
+  if (v == null) return null;
+  if (key === 'sleep_duration') {
+    const h = Math.floor(v / 60);
+    const m = Math.round(v % 60);
+    return h + 'h' + String(m).padStart(2, '0');
+  }
+  if (key === 'steps') return Math.round(v).toLocaleString();
+  if (key === 'respiration') return v.toFixed(1);
+  return String(Math.round(v));
+}
+
+function baselineUnit(m) {
+  // sleep and steps carry their unit inside the formatted value
+  if (m.key === 'sleep_duration' || m.key === 'steps') return '';
+  return m.unit ? ' ' + m.unit : '';
+}
+
+function relPhrase(m) {
+  if (m.direction_vs_baseline === 'typical') return 'in your usual range';
+  const strong = Math.abs(m.deviation_iqr) >= 1.5;
+  const dir = m.direction_vs_baseline === 'above' ? 'above' : 'below';
+  return (strong ? 'well ' : '') + dir + ' your usual';
+}
+
+function baselineChip(m) {
+  const val = fmtBaselineValue(m.key, m.current);
+  if (val == null) return '';
+  // favourable is decided by the API, not here — for resting heart rate and
+  // breathing rate, below baseline is the good direction.
+  const color = m.favourable === true ? '#00C896'
+              : m.favourable === false ? '#FFB800'
+              : 'var(--subdued)';
+  const stamp = m.source === 'completed_day' ? ' · yesterday' : '';
+  return `
+    <div style="flex:1;min-width:30%;background:var(--surface-heavy);border:1px solid var(--border);border-radius:12px;padding:12px 13px;">
+      <div style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--subdued);margin-bottom:6px;">${m.label}${stamp}</div>
+      <div style="font-family:'JetBrains Mono';font-size:19px;color:var(--bone);line-height:1;">${val}<span style="font-size:11px;color:var(--subdued);">${baselineUnit(m)}</span></div>
+      <div style="font-size:11px;color:${color};margin-top:6px;line-height:1.3;">${relPhrase(m)}</div>
+    </div>`;
+}
+
+// Which three chips appear is decided by the API's deviation ranking, not by
+// fixed slots. Fixed slots go stale; deviation-ranked ones never do.
+function baselineChips() {
+  const b = baselineData;
+  if (!b || b.status !== 'ready') return '';
+  const keys = b.top3 || [];
+  const chips = keys.map(k => baselineChip(b.metrics[k])).filter(Boolean).join('');
+  if (!chips) return '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">${chips}</div>`;
+}
+
+// Deliberately silent. On Day 106 a line reading "still learning what a normal
+// night looks like for you" invites a question that can only be answered by
+// explaining a week of data bugs. Absence of chips raises nothing; an apology
+// for their absence raises everything. Kept as a no-op so the slot exists if
+// copy is wanted here later.
+function baselineFormingNote() {
+  return '';
+}
+
+function continuityLine(clientId, dateISO) {
+  const day = protocolDay(clientId);
+  const dayLabel = day ? `Day ${day} · Protocol` : 'Protocol';
+  return `
+    <div style="margin-bottom:26px;">
+      <div style="font-family:'JetBrains Mono';font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--manaBlue);margin-bottom:6px;">${dayLabel}</div>
+      <div style="font-size:13px;color:var(--subdued);">${longDate(dateISO)}</div>
+    </div>`;
+}
+
+// The observation carries the screen. On quiet days it is the only thing on
+// it, so it is set larger there than on days with chips above it.
+function observationBlock(text, large) {
+  if (!text) return '';
+  const size = large ? '19px' : '16px';
+  return `<p style="font-size:${size};line-height:1.65;color:var(--bone);font-weight:300;">${text}</p>`;
+}
+
+function daysSinceLastReading(data) {
+  const hist = (data.history || []).filter(d => hasOvernightData(d));
+  if (!hist.length) return null;
+  const last = hist[0].date;
+  const ms = new Date(new Date().toDateString()).getTime() - new Date(last + 'T00:00:00').getTime();
+  return { date: last, days: Math.round(ms / 86400000) };
+}
+
 function renderToday(data) {
   const t = data.today;
-  if (!t) {
-    document.getElementById('today-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">No data for today yet. Check back after 11:30 AM.</p>';
-    return;
-  }
-  const bc = bandColor(t.band);
-  const sc = scoreColor(t.overall_score);
-  const ls = t.layer_scores || {};
-  const ci = data.cycle_indicators || null;
+  const clientId = document.getElementById('clientSelect').value.toUpperCase();
+  const state = resolveTodayState(t);
 
-  // Dynamic date header
-  const todayDate = t.date ? new Date(t.date + 'T12:00:00') : new Date();
-  const dayName = todayDate.toLocaleDateString('en-GB', { weekday: 'short' });
-  const dayNum = todayDate.getDate();
-  const suffix = [,'st','nd','rd'][dayNum % 10 > 3 ? 0 : (dayNum % 100 - dayNum % 10 != 10) * dayNum % 10] || 'th';
-  const monthName = todayDate.toLocaleDateString('en-GB', { month: 'long' });
-  const dateLabel = `Today, ${dayName} ${dayNum}${suffix} of ${monthName}`;
-
+  // The daily prompt is independent of data state — it renders whenever S5 fired.
   let promptHtml = '';
-  if (t.prompt && t.prompt.fired) {
+  if (t && t.prompt && t.prompt.fired) {
     const p = t.prompt;
     const hasAnswer = p.answer && p.answer.trim() !== '';
     const opts = (p.options || []).map(o => {
       const isAnswer = hasAnswer && o === p.answer;
       if (hasAnswer) {
         return `<div style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:6px;background:${isAnswer ? 'rgba(58,134,255,0.15)' : 'var(--surface-heavy)'};border:1px solid ${isAnswer ? 'var(--manaBlue)' : 'var(--border)'};color:${isAnswer ? 'var(--manaBlue)' : 'var(--bone)'};">${o}${isAnswer ? ' ✓' : ''}</div>`;
-      } else {
-        const escaped = o.replace(/'/g, "\\'");
-        return `<div onclick="selectPromptAnswer(this, '${escaped}')" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:6px;background:var(--surface-heavy);border:1px solid var(--border);color:var(--bone);cursor:pointer;transition:all 0.2s;">${o}</div>`;
       }
+      const escaped = o.replace(/'/g, "\\'");
+      return `<div onclick="selectPromptAnswer(this, '${escaped}')" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:6px;background:var(--surface-heavy);border:1px solid var(--border);color:var(--bone);cursor:pointer;transition:all 0.2s;">${o}</div>`;
     }).join('');
-    const submitBtn = hasAnswer ? '' : `<button id="promptSubmitBtn" onclick="submitPromptAnswer()" style="display:none;width:100%;background:var(--manaBlue);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;">Submit Answer</button>`;
+    const submitBtn = hasAnswer ? '' :
+      `<button id="promptSubmitBtn" onclick="submitPromptAnswer()" style="display:none;width:100%;background:var(--manaBlue);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;">Submit Answer</button>`;
     promptHtml = `
-      <div class="card" style="margin-top:0;">
+      <div class="card">
         <h2>Daily Prompt</h2>
         <p style="font-size:13px;line-height:1.6;margin-bottom:12px;">${p.question}</p>
         <div id="promptOptions">${opts}</div>
@@ -996,36 +1139,71 @@ function renderToday(data) {
       </div>`;
   }
 
-  document.getElementById('today-content').innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
-        <div>
-          <h2 style="margin-bottom:4px;">${dateLabel}</h2>
-          <span style="font-size:11px;font-family:'JetBrains Mono';color:${bc};background:${bc}22;padding:2px 8px;border-radius:10px;border:1px solid ${bc}44;">${t.band}</span>
-        </div>
-        <span style="font-family:'JetBrains Mono';font-size:32px;color:${sc};">${Math.round(t.overall_score)}<span style="font-size:12px;color:var(--subdued);">/100</span></span>
-      </div>
+  let body = '';
 
-      <div class="layer-scores">
-        <div class="metric-label" style="margin-bottom:12px;">SYSTEM LAYERS</div>
-        ${layerBar('Structure', ls.structure || 0)}
-        ${layerBar('Electricity', ls.electricity || 0)}
-        ${layerBar('Energy', ls.energy || 0)}
-        ${layerBar('Regulation', ls.regulation || 0)}
-      </div>
+  if (state === 'pending') {
+    // Nothing invented here. The copy comes from the API, which knows when the
+    // collection window closes — the screen does not guess.
+    //
+    // SLOT: if a warm pre-observation line is wanted here, it should be
+    // generated by S4 (Haiku) against real inputs and written to a
+    // `pre_observation` field on the Daily Record — NOT hardcoded in JS,
+    // where none of S4's guards against invented claims apply.
+    body = `
+      <div class="card" style="padding:32px 26px;">
+        ${continuityLine(clientId, null)}
+        <p style="font-size:19px;line-height:1.65;color:var(--bone);font-weight:300;">
+          Today is still being read.
+        </p>
+        <p style="font-size:13px;line-height:1.6;color:var(--subdued);margin-top:14px;">
+          ${(t && t.message) || 'Waiting for your watch to sync.'}
+        </p>
+      </div>`;
 
-      ${renderCycleIndicators(ci)}
+  } else if (state === 'missing') {
+    body = `
+      <div class="card" style="padding:32px 26px;">
+        ${continuityLine(clientId, null)}
+        <p style="font-size:19px;line-height:1.65;color:var(--bone);font-weight:300;">
+          Today hasn't come through.
+        </p>
+        <p style="font-size:13px;line-height:1.6;color:var(--subdued);margin-top:14px;">
+          ${(t && t.message) || 'No overnight data came through for last night.'}
+        </p>
+      </div>`;
 
-      ${wearableChips(t.wearable)}
+  } else if (state === 'quiet') {
+    const last = daysSinceLastReading(data);
+    let footer = t.message || 'Part of last night came through. The picture is incomplete.';
+    if (last && last.days > 1) {
+      footer += ` Your last full reading is from ${longDate(last.date)}.`;
+    }
+    body = `
+      <div class="card" style="padding:32px 26px;">
+        ${continuityLine(clientId, t.date)}
+        ${observationBlock(t.observation, true)}
+        <p style="font-size:12px;line-height:1.6;color:var(--subdued);margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">
+          ${footer}
+        </p>
+      </div>`;
 
-      ${t.observation ? `
-      <div class="obs-box">
-        <div class="metric-label">OBSERVATION</div>
-        <div class="obs-text" style="margin-top:8px;">"${t.observation}"</div>
-      </div>` : ''}
-    </div>
-    ${promptHtml}`;
+  } else { // present
+    const bc = bandColor(t.band);
+    const bandHtml = t.band ? `
+      <div style="margin-bottom:22px;">
+        <span style="font-family:'JetBrains Mono';font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:${bc};background:${bc}1A;padding:5px 12px;border-radius:12px;border:1px solid ${bc}44;">${t.band}</span>
+      </div>` : '';
+    body = `
+      <div class="card" style="padding:32px 26px;">
+        ${continuityLine(clientId, t.date)}
+        ${bandHtml}
+        ${baselineChips()}
+        ${baselineFormingNote()}
+        ${observationBlock(t.observation, false)}
+      </div>`;
+  }
 
+  document.getElementById('today-content').innerHTML = body + promptHtml;
   document.getElementById('today-loading').style.display = 'none';
   document.getElementById('today-content').style.display = 'block';
 }
@@ -1038,7 +1216,10 @@ function renderHistory(data) {
   }
 
   const cards = history.map(day => {
-    const sc = scoreColor(day.overall_score);
+    // overall_score is null on any day the API will not stand behind.
+    // Math.round(null) is 0, which would render a confident "0/100".
+    const hasScore = day.overall_score != null;
+    const sc = hasScore ? scoreColor(day.overall_score) : 'var(--subdued)';
     const ls = day.layer_scores || {};
     const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -1049,10 +1230,10 @@ function renderHistory(data) {
             <h2 style="margin-bottom:4px;">${dateLabel}</h2>
             <span style="font-size:11px;font-family:'JetBrains Mono';color:var(--subdued);">${day.observation_layer || ''} · ${day.observation_type || ''}</span>
           </div>
-          <span style="font-family:'JetBrains Mono';font-size:24px;color:${sc};">${Math.round(day.overall_score)}<span style="font-size:11px;color:var(--subdued);">/100</span></span>
+          <span style="font-family:'JetBrains Mono';font-size:24px;color:${sc};">${hasScore ? Math.round(day.overall_score) + '<span style="font-size:11px;color:var(--subdued);">/100</span>' : '—'}</span>
         </div>
 
-        <div class="layer-scores">
+        <div class="layer-scores" style="display:${hasScore ? 'block' : 'none'};">
           ${layerBar('Structure', ls.structure || 0)}
           ${layerBar('Electricity', ls.electricity || 0)}
           ${layerBar('Energy', ls.energy || 0)}
@@ -1085,12 +1266,23 @@ async function fetchAndRender() {
   const clientId = document.getElementById('clientSelect').value.toUpperCase();
   const today = new Date().toISOString().split('T')[0];
   try {
-    const res = await fetch(`${DATA_API}?client_id=${clientId}&date=${today}`);
-    if (!res.ok) throw new Error('API error');
-    cachedData = await res.json();
+    // Baselines are fetched alongside the daily payload, not blocking it: a
+    // baseline failure must degrade the chips, never the observation.
+    const [dailyRes, baseRes] = await Promise.all([
+      fetch(`${DATA_API}?client_id=${clientId}&date=${today}`),
+      fetch(`${DATA_API}?client_id=${clientId}&endpoint=baselines`).catch(() => null)
+    ]);
+    if (!dailyRes.ok) throw new Error('API error');
+    cachedData = await dailyRes.json();
+
+    baselineData = null;
+    if (baseRes && baseRes.ok) {
+      try { baselineData = await baseRes.json(); } catch (e) { baselineData = null; }
+    }
+
     renderToday(cachedData);
     renderHistory(cachedData);
-  } catch(e) {
+  } catch (e) {
     document.getElementById('today-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load data. Check connection.</p>';
     document.getElementById('history-loading').innerHTML = '<p style="color:var(--subdued);font-size:14px;text-align:center;padding:20px 0;">Could not load history.</p>';
   }
