@@ -9,7 +9,7 @@ of what was true at the moment S3 last ran, which is wrong in two directions:
   - Polar delivers a night hours after it ended. Between the night ending and
     the data arriving, the record is empty and the column said `no_sync` —
     telling the client her watch failed when it hadn't. That happened on the
-    18th, the 20th and the 21st of August 2026.
+    18th, 20th and 21st of August 2026.
   - When a late night finally landed, or S1-H healed an old day, nothing
     recomputed the column. Good data sat underneath a `no_sync` label.
 
@@ -26,8 +26,7 @@ The states
     missing   window closed, nothing arrived. The honest negative.
 
 `pending` and `missing` are the same data with different meaning, separated
-only by the clock. Everything downstream keys off `is_analysable`, so the
-distinction is presentational — but presentation is exactly where the harm was.
+only by the clock.
 """
 
 from __future__ import annotations
@@ -38,19 +37,32 @@ from datetime import datetime, time, timedelta, timezone
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from store import DailyRecord
-
 State = Literal["present", "partial", "pending", "missing"]
 
 CLIENT_TZ = ZoneInfo("Europe/Paris")
 
 # Last S1 pass of the day, plus grace. Before this, absence means "not yet".
-# After it, absence means "not coming". Keep in sync with S1's schedule —
-# if the evening run moves, move this.
+# After it, absence means "not coming". KEEP IN SYNC WITH S1'S SCHEDULE — if
+# the evening run moves, move this.
 FINAL_SYNC_HOUR = 20
 FINAL_SYNC_GRACE_MINUTES = 45
 
 OVERNIGHT_FIELDS = ("sleep_duration_minutes", "hrv_overnight_rmssd", "resting_heart_rate")
+
+# States whose numbers must never enter a baseline pool, a correlation, or an
+# archetype window. Imported by main.py so the rule lives in one place.
+NON_ANALYSABLE_STATES = frozenset({"pending", "missing", "partial"})
+
+
+def today_local() -> Date:
+    """Current date in the client's timezone. Every date comparison in the API
+    must use this — datetime.utcnow().date() is a different day for two hours
+    every night, which is exactly the window where pending flips to missing."""
+    return datetime.now(timezone.utc).astimezone(CLIENT_TZ).date()
+
+
+def today_str() -> str:
+    return today_local().isoformat()
 
 
 @dataclass(frozen=True)
@@ -69,10 +81,10 @@ class DataState:
     def show_score(self) -> bool:
         """Whether the client should see a number at all.
 
-        Deliberately strict. A score computed from a partial or empty record
-        is not a weaker version of the real score — it is a different number
-        that happens to look like one. Showing yesterday's value, or a value
-        derived from zeros, is worse than showing nothing.
+        Deliberately strict. A score computed from a partial or empty record is
+        not a weaker version of the real score — it is a different number that
+        happens to look like one. Showing yesterday's value, or a value derived
+        from zeros, is worse than showing nothing.
         """
         return self.state == "present"
 
@@ -104,11 +116,12 @@ def _window_closed(day: Date, now: datetime | None = None) -> bool:
     return now >= cutoff
 
 
-def compute(record: DailyRecord | None, day: Date, now: datetime | None = None) -> DataState:
+def compute(record, day: Date, now: datetime | None = None) -> DataState:
     """The single source of truth for whether a day has usable overnight data.
 
-    `record` may be None — the daily record itself may not exist yet, which is
-    normal between midnight and the 06:30 pass.
+    `record` is anything exposing the three OVERNIGHT_FIELDS as attributes
+    (a store.DailyRecord, or the _Extracted adapter below), or None — the daily
+    record itself may not exist yet, which is normal before the 06:30 pass.
     """
     if record is None:
         closed = _window_closed(day, now)
@@ -119,8 +132,8 @@ def compute(record: DailyRecord | None, day: Date, now: datetime | None = None) 
             missing_fields=OVERNIGHT_FIELDS,
         )
 
-    present = tuple(f for f in OVERNIGHT_FIELDS if getattr(record, f) is not None)
-    missing = tuple(f for f in OVERNIGHT_FIELDS if getattr(record, f) is None)
+    present = tuple(f for f in OVERNIGHT_FIELDS if getattr(record, f, None) is not None)
+    missing = tuple(f for f in OVERNIGHT_FIELDS if getattr(record, f, None) is None)
 
     if not missing:
         return DataState("present", "complete overnight tuple", present, ())
@@ -128,7 +141,7 @@ def compute(record: DailyRecord | None, day: Date, now: datetime | None = None) 
     if present:
         return DataState(
             state="partial",
-            reason=f"missing {', '.join(missing)}",
+            reason="missing " + ", ".join(missing),
             present_fields=present,
             missing_fields=missing,
         )
@@ -143,16 +156,45 @@ def compute(record: DailyRecord | None, day: Date, now: datetime | None = None) 
 
     return DataState(
         state="pending",
-        reason=f"waiting for sync; window open until {FINAL_SYNC_HOUR:02d}:"
-               f"{FINAL_SYNC_GRACE_MINUTES:02d}",
+        reason="waiting for sync; window open until "
+               f"{FINAL_SYNC_HOUR:02d}:{FINAL_SYNC_GRACE_MINUTES:02d}",
         present_fields=(),
         missing_fields=missing,
     )
 
 
+# ── Adapter for main.py's dict shape ────────────────────────────────────────
+# main.py's extract_record() returns plain dicts, not store.DailyRecord. This
+# bridges the two without main.py migrating onto store.py yet. It also applies
+# the zero-is-absent rule, which extract_record() does not.
+
+def _clean(v):
+    if v is None:
+        return None
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if v == 0 else v
+
+
+class _Extracted:
+    """Attribute view over an extract_record() dict."""
+
+    def __init__(self, day: dict):
+        w = day.get("wearable") or {}
+        self.sleep_duration_minutes = _clean(w.get("sleep_duration"))
+        self.hrv_overnight_rmssd = _clean(w.get("hrv"))
+        self.resting_heart_rate = _clean(w.get("rhr"))
+
+
+def compute_from_extracted(day: dict | None, day_date: Date, now=None) -> DataState:
+    return compute(_Extracted(day) if day else None, day_date, now)
+
+
 # Copy shown to the client. The pending wording is the whole point of this
 # module: it does not accuse her of anything.
-CLIENT_COPY: dict[State, str] = {
+CLIENT_COPY = {
     "present": "",
     "partial": "Part of last night came through. The picture is incomplete.",
     "pending": "Waiting for your watch to sync. Last night usually arrives by evening.",
