@@ -549,13 +549,32 @@ async function syncPushSubscription() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     const reg = await navigator.serviceWorker.ready;
+
     let sub = await reg.pushManager.getSubscription();
+
+    // If the VAPID key is ever rotated, the existing subscription is signed
+    // against a key the sender no longer holds. It looks valid here and fails
+    // silently at the push service, so drop it and subscribe again.
+    if (sub) {
+      let currentKey = '';
+      try {
+        const raw = new Uint8Array(sub.options.applicationServerKey);
+        currentKey = btoa(String.fromCharCode.apply(null, raw))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      } catch (e) { /* older browsers don't expose options; leave as-is */ }
+      if (currentKey && currentKey !== VAPID_PUBLIC_KEY) {
+        await sub.unsubscribe();
+        sub = null;
+      }
+    }
+
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
     }
+
     const clientId = document.getElementById('clientSelect').value.toUpperCase();
     await fetch(PUSH_WEBHOOK, {
       method: 'POST',
@@ -567,23 +586,49 @@ async function syncPushSubscription() {
   }
 }
 
-// Register service worker and sync subscription on every load
+// Register service worker, sync subscription, and listen for a notification
+// tap while the app is already open.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(() => {
     syncPushSubscription();
   });
+
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    const msg = e.data || {};
+    if (msg.type !== 'notification-click') return;
+    // Prompt notifications also land on Today — that is where the prompt card
+    // renders, underneath the observation.
+    activateTab('today');
+  });
 }
 
 // ═══ TAB NAVIGATION ═══
-function switchTab(tabId) {
+const TAB_ORDER = ['record', 'checkin', 'today', 'history', 'weekly', 'progress'];
+
+// Callable from anywhere. The previous switchTab() read the global `event`,
+// which only exists during a real click — so notification routing could never
+// drive it, and the postMessage from sw.js had nothing that worked to call.
+function activateTab(tabId) {
+  if (TAB_ORDER.indexOf(tabId) === -1) return;
+  const view = document.getElementById('view-' + tabId);
+  if (!view) return;
+
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById(`view-${tabId}`).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  if(tabId === 'checkin') checkState();
-  if(tabId === 'today' || tabId === 'history') fetchAndRender();
-  if(tabId === 'weekly') fetchWeeklyBrief();
-  if(tabId === 'progress') fetchProgress();
+  view.classList.add('active');
+
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(el => el.classList.remove('active'));
+  const idx = TAB_ORDER.indexOf(tabId);
+  if (items[idx]) items[idx].classList.add('active');
+
+  if (tabId === 'checkin') checkState();
+  if (tabId === 'today' || tabId === 'history') fetchAndRender();
+  if (tabId === 'weekly') fetchWeeklyBrief();
+  if (tabId === 'progress') fetchProgress();
+}
+
+function switchTab(tabId) {
+  activateTab(tabId);
 }
 
 // ═══ NATIVE CHECK-IN SUBMISSION (Make.com S8 Pipeline) ═══
@@ -973,16 +1018,8 @@ const PROTOCOL_START = { 'MANA-TEST': '2026-04-30' };
 // Populated by fetchAndRender() from ?endpoint=baselines
 let baselineData = null;
 
-// The API now decides pending vs missing (data_state.py, FINAL_SYNC_HOUR).
-// The screen no longer guesses from the clock — that guess is what produced
-// "the watch didn't sync last night" on days the watch had synced fine and
-// Polar simply hadn't propagated the night yet.
-const API_STATE_TO_SCREEN = {
-  present: 'present',
-  partial: 'quiet',
-  pending: 'pending',
-  missing: 'missing'
-};
+// The hour the pipeline finishes and S4 writes the observation.
+const PIPELINE_HOUR = 11;
 
 const OVERNIGHT_KEYS = ['sleep_duration', 'hrv', 'rhr', 'respiration'];
 
@@ -1005,20 +1042,28 @@ function hasOvernightData(t) {
   return OVERNIGHT_KEYS.some(k => w[k] != null && w[k] !== 0);
 }
 
-// Four engine states map straight onto four screens.
+// Four engine states collapse into three screens.
 //
-//   present  → band + chips + observation
-//   partial  → 'quiet': observation alone, no band, no chips
-//   pending  → collection window still open, nothing has arrived yet
-//   missing  → window closed, nothing arrived
+//   full / partial  → 'present'   band + chips + observation
+//   stale / no_sync → 'quiet'     observation alone, no band, no chips
+//   nothing yet     → 'pending'   before the pipeline has run
+//   nothing at all  → 'missing'   after it should have run and didn't
 //
-// The mapping is the API's call, not the screen's. The fallback below only
-// fires if the API is older than this build.
+// `stale` renders as quiet rather than present on purpose: those scores are
+// carried forward from an earlier day. Showing them as tonight's would be
+// indistinguishable from real data, which is worse than showing nothing.
+//
+// A day with daytime fields but no overnight anchor is also quiet — Today is
+// a last-night screen, and steps alone is not last night.
 function resolveTodayState(t) {
   const todayISO = new Date().toISOString().split('T')[0];
-  if (!t || t.date !== todayISO) return 'pending';
-  const mapped = API_STATE_TO_SCREEN[(t.data_state || '').toLowerCase()];
-  if (mapped) return mapped;
+  const pastPipeline = new Date().getHours() >= PIPELINE_HOUR;
+
+  if (!t || t.date !== todayISO || !t.observation) {
+    return pastPipeline ? 'missing' : 'pending';
+  }
+  const ds = (t.data_state || '').toLowerCase();
+  if (ds === 'no_sync' || ds === 'stale') return 'quiet';
   return hasOvernightData(t) ? 'present' : 'quiet';
 }
 
@@ -1142,11 +1187,11 @@ function renderToday(data) {
   let body = '';
 
   if (state === 'pending') {
-    // Nothing invented here. The copy comes from the API, which knows when the
-    // collection window closes — the screen does not guess.
+    // Nothing invented here. The only true statement available before the
+    // pipeline runs is when it runs.
     //
     // SLOT: if a warm pre-observation line is wanted here, it should be
-    // generated by S4 (Haiku) against real inputs and written to a
+    // generated by S4 (Haiku, ~06:15) against real inputs and written to a
     // `pre_observation` field on the Daily Record — NOT hardcoded in JS,
     // where none of S4's guards against invented claims apply.
     body = `
@@ -1156,7 +1201,7 @@ function renderToday(data) {
           Today is still being read.
         </p>
         <p style="font-size:13px;line-height:1.6;color:var(--subdued);margin-top:14px;">
-          ${(t && t.message) || 'Waiting for your watch to sync.'}
+          Your state arrives at ${PIPELINE_HOUR}:00.
         </p>
       </div>`;
 
@@ -1168,15 +1213,18 @@ function renderToday(data) {
           Today hasn't come through.
         </p>
         <p style="font-size:13px;line-height:1.6;color:var(--subdued);margin-top:14px;">
-          ${(t && t.message) || 'No overnight data came through for last night.'}
+          That's on our side, not yours. Nothing for you to do.
         </p>
       </div>`;
 
   } else if (state === 'quiet') {
+    const ds = (t.data_state || '').toLowerCase();
     const last = daysSinceLastReading(data);
-    let footer = t.message || 'Part of last night came through. The picture is incomplete.';
-    if (last && last.days > 1) {
-      footer += ` Your last full reading is from ${longDate(last.date)}.`;
+    let footer;
+    if (ds === 'stale' && last) {
+      footer = `Your last reading is from ${longDate(last.date)}. Worth checking your watch synced.`;
+    } else {
+      footer = `Nothing came through from your watch last night.`;
     }
     body = `
       <div class="card" style="padding:32px 26px;">
@@ -1216,10 +1264,7 @@ function renderHistory(data) {
   }
 
   const cards = history.map(day => {
-    // overall_score is null on any day the API will not stand behind.
-    // Math.round(null) is 0, which would render a confident "0/100".
-    const hasScore = day.overall_score != null;
-    const sc = hasScore ? scoreColor(day.overall_score) : 'var(--subdued)';
+    const sc = scoreColor(day.overall_score);
     const ls = day.layer_scores || {};
     const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -1230,10 +1275,10 @@ function renderHistory(data) {
             <h2 style="margin-bottom:4px;">${dateLabel}</h2>
             <span style="font-size:11px;font-family:'JetBrains Mono';color:var(--subdued);">${day.observation_layer || ''} · ${day.observation_type || ''}</span>
           </div>
-          <span style="font-family:'JetBrains Mono';font-size:24px;color:${sc};">${hasScore ? Math.round(day.overall_score) + '<span style="font-size:11px;color:var(--subdued);">/100</span>' : '—'}</span>
+          <span style="font-family:'JetBrains Mono';font-size:24px;color:${sc};">${Math.round(day.overall_score)}<span style="font-size:11px;color:var(--subdued);">/100</span></span>
         </div>
 
-        <div class="layer-scores" style="display:${hasScore ? 'block' : 'none'};">
+        <div class="layer-scores">
           ${layerBar('Structure', ls.structure || 0)}
           ${layerBar('Electricity', ls.electricity || 0)}
           ${layerBar('Energy', ls.energy || 0)}
@@ -1551,6 +1596,21 @@ function progressSparkline(pts, lines, n) {
   pts.forEach(p=>{svg+=`<text x="${sx(p.x).toFixed(1)}" y="${H-6}" text-anchor="middle" fill="var(--subdued)" style="font-family:'JetBrains Mono';font-size:9px">${p.label||''}</text>`;});
   svg+=`</svg>`; return svg;
 }
+
+// ═══ NOTIFICATION COLD START ═══
+// sw.js opens /?view=today&client=…&date=… when nothing is running.
+(function handleLaunchParams() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (!view) return;
+    activateTab(view === 'prompt' ? 'today' : view);
+    // Clean the URL so a later refresh doesn't re-route unexpectedly.
+    window.history.replaceState({}, '', window.location.pathname);
+  } catch (e) {
+    console.log('Launch param routing skipped:', e.message);
+  }
+})();
 
 </script>
 </body>
