@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets — repo is public. Nothing here should ever be committed.
+.env
+.env.*
+*.key
+*.pem
+service-account*.json
+credentials*.json
