@@ -2,15 +2,24 @@ import functions_framework
 import json
 import math
 import os
+from datetime import date, timedelta
 
 # ──────────────────────────────────────────────────────────────────────
 # CONFIG — all thresholds are env-overridable so test-phase values never
 # become permanent by accident. Defaults are the production values.
 # ──────────────────────────────────────────────────────────────────────
+# RC_WINDOW_DAYS is CALENDAR days, not row count. The window is the N days
+# ending on the most recent record; whatever valid rows fall inside it are
+# what gets correlated. A row-count window would silently stretch the span
+# backwards in proportion to the drop rate — at ~45% drops, a 60-row window
+# reaches back ~108 calendar days and blends unrelated physiological regimes.
 RC_WINDOW_DAYS       = int(os.environ.get("RC_WINDOW_DAYS", "60"))
 RC_MIN_DAYS          = int(os.environ.get("RC_MIN_DAYS", "20"))
 RC_MIN_PAIR_POINTS   = int(os.environ.get("RC_MIN_PAIR_POINTS", "15"))
 RC_SUFFICIENT_POINTS = int(os.environ.get("RC_SUFFICIENT_POINTS", "20"))
+# Below this many valid rows, correlations are too noisy to narrate —
+# the run still computes, but is labelled test_mode so S10/S7 can refuse it.
+RC_VALID_MIN_ROWS    = int(os.environ.get("RC_VALID_MIN_ROWS", "21"))
 RC_DROP_NO_SYNC      = os.environ.get("RC_DROP_NO_SYNC", "true").lower() == "true"
 RC_DROP_DUPLICATES   = os.environ.get("RC_DROP_DUPLICATES", "true").lower() == "true"
 RC_VERSION           = 2
@@ -178,13 +187,55 @@ def compute_relational_matrix(request):
         rows_received = len(parsed_rows)
         rows_dropped = dropped_no_sync + dropped_duplicate + dropped_empty
 
-        # Trim to the analysis window (most recent N valid days).
-        if RC_WINDOW_DAYS > 0 and len(daily_scores) > RC_WINDOW_DAYS:
-            daily_scores = daily_scores[-RC_WINDOW_DAYS:]
+        # ──────────────────────────────────────────────────────────────
+        # CALENDAR WINDOW
+        #
+        # The window is the RC_WINDOW_DAYS calendar days ending on the most
+        # recent surviving record. Rows outside it are cut regardless of how
+        # many remain, so "60-day window" always means 60 days of elapsed
+        # time — never "however far back we had to reach to find 60 rows".
+        # ──────────────────────────────────────────────────────────────
+        window_start = window_end = None
+        dropped_out_of_window = 0
+
+        if daily_scores and RC_WINDOW_DAYS > 0:
+            try:
+                end_d = date.fromisoformat(daily_scores[-1]["date"][:10])
+                start_d = end_d - timedelta(days=RC_WINDOW_DAYS - 1)
+                before = len(daily_scores)
+                daily_scores = [
+                    r for r in daily_scores
+                    if r.get("date")
+                    and date.fromisoformat(r["date"][:10]) >= start_d
+                ]
+                dropped_out_of_window = before - len(daily_scores)
+                window_start, window_end = start_d.isoformat(), end_d.isoformat()
+            except (ValueError, TypeError):
+                # Unparseable dates: fall through uncut rather than silently
+                # correlating an arbitrary slice.
+                window_start = window_end = None
+
+        # Actual elapsed span of the surviving rows, which can be shorter
+        # than the nominal window if the client started mid-window.
+        span_days = None
+        if daily_scores:
+            try:
+                first = date.fromisoformat(daily_scores[0]["date"][:10])
+                last = date.fromisoformat(daily_scores[-1]["date"][:10])
+                span_days = (last - first).days + 1
+            except (ValueError, TypeError):
+                span_days = None
 
         config_block = {
             "rc_version": RC_VERSION,
             "window_days": RC_WINDOW_DAYS,
+            "window_start": window_start,
+            "window_end": window_end,
+            "span_days": span_days,
+            "coverage_pct": (
+                round(100 * len(daily_scores) / span_days, 1)
+                if span_days else None
+            ),
             "min_days": RC_MIN_DAYS,
             "min_pair_points": RC_MIN_PAIR_POINTS,
             "rows_received": rows_received,
@@ -193,6 +244,7 @@ def compute_relational_matrix(request):
             "dropped_no_sync": dropped_no_sync,
             "dropped_duplicate": dropped_duplicate,
             "dropped_empty": dropped_empty,
+            "dropped_out_of_window": dropped_out_of_window,
         }
 
         # Floor is checked AFTER filtering — the old code checked the raw
@@ -447,11 +499,13 @@ def compute_relational_matrix(request):
         computed = sum(1 for v in matrix.values() if v["sufficient_data"])
         insufficient = sum(1 for v in matrix.values() if not v["sufficient_data"])
 
-        # A run is only "valid" if the window is long enough for the
-        # correlations to mean anything. Short windows are permitted for
-        # pipeline testing but are labelled so downstream consumers
-        # (S10 archetype, S7 brief) can refuse to narrate them.
-        validation_status = "valid" if RC_WINDOW_DAYS >= 21 else "test_mode"
+        # Validity keys off the number of real observations, not the nominal
+        # window length — a 60-day window containing 12 usable days is just
+        # as noisy as a 12-day one. Short runs still compute, but are
+        # labelled so S10 and S7 can refuse to narrate them.
+        validation_status = (
+            "valid" if len(daily_scores) >= RC_VALID_MIN_ROWS else "test_mode"
+        )
 
         config_block["weights_missing"] = weights_missing
         config_block["mean_weight"] = (
@@ -484,6 +538,9 @@ def compute_relational_matrix(request):
             "days_analyzed": len(daily_scores),
             "rows_dropped": rows_dropped,
             "window_days": RC_WINDOW_DAYS,
+            "window_start": window_start,
+            "window_end": window_end,
+            "span_days": span_days,
             "top_deviations": top_devs[:3],
             "layer_summaries": layer_summaries
         }
