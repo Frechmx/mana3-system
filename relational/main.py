@@ -1,19 +1,45 @@
 import functions_framework
 import json
 import math
+import os
+
+# ──────────────────────────────────────────────────────────────────────
+# CONFIG — all thresholds are env-overridable so test-phase values never
+# become permanent by accident. Defaults are the production values.
+# ──────────────────────────────────────────────────────────────────────
+RC_WINDOW_DAYS       = int(os.environ.get("RC_WINDOW_DAYS", "60"))
+RC_MIN_DAYS          = int(os.environ.get("RC_MIN_DAYS", "20"))
+RC_MIN_PAIR_POINTS   = int(os.environ.get("RC_MIN_PAIR_POINTS", "15"))
+RC_SUFFICIENT_POINTS = int(os.environ.get("RC_SUFFICIENT_POINTS", "20"))
+RC_DROP_NO_SYNC      = os.environ.get("RC_DROP_NO_SYNC", "true").lower() == "true"
+RC_DROP_DUPLICATES   = os.environ.get("RC_DROP_DUPLICATES", "true").lower() == "true"
+RC_VERSION           = 2
+
+# Deviation is |expected_r - actual_r|, which ranges 0..2.
+# RC maps that range onto 0..100. Denominator MUST match the scale of the
+# numerator — see RC scaling note below.
+RC_DEVIATION_MAX = 2.0
+
 
 @functions_framework.http
 def compute_relational_matrix(request):
     """
     S9 — Relational Matrix Computation
-    Updated to accept Notion API raw response format directly from Make.com.
-    
+    Accepts Notion API raw response format directly from Make.com.
+
     Expected JSON body:
     {
         "notion_daily": { "results": [ ...Notion page objects... ] },
         "notion_pairs": { "results": [ ...Notion page objects... ] },
         "previous_matrix": { "F1_F2": { "actual_r": 0.65 }, ... }  // optional
     }
+
+    v2 changes:
+      - Drops no_sync days and carry-forward duplicate days before correlating.
+      - RC numerator and denominator now share a scale (was a unit mismatch
+        that compressed all RC values into ~88-100).
+      - Single consistent weighting scheme (was two incompatible ones).
+      - All thresholds env-configurable; config echoed in the response.
     """
     # CORS preflight
     if request.method == "OPTIONS":
@@ -31,17 +57,10 @@ def compute_relational_matrix(request):
         payload = request.get_json()
         notion_daily = payload.get("notion_daily", {})
         notion_pairs = payload.get("notion_pairs", {})
-        previous_matrix = payload.get("previous_matrix", {})
+        previous_matrix = payload.get("previous_matrix", {}) or {}
 
         # ── PARSE NOTION DAILY RECORDS ──
         daily_pages = notion_daily.get("results", [])
-        
-        if len(daily_pages) < 20:
-            return (json.dumps({
-                "error": "Insufficient data",
-                "message": f"Need at least 20 days, received {len(daily_pages)}",
-                "relational_coherence_score": None
-            }), 200, headers)
 
         def get_number(props, key):
             """Safely extract a number from Notion properties."""
@@ -77,6 +96,13 @@ def compute_relational_matrix(request):
                 return prop["select"].get("name", "")
             return ""
 
+        def get_checkbox(props, key):
+            """Safely extract checkbox value from Notion properties."""
+            prop = props.get(key, {})
+            if prop.get("type") == "checkbox":
+                return bool(prop.get("checkbox"))
+            return False
+
         # Build daily scores from Notion pages
         fields = ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"]
         field_keys = {
@@ -86,23 +112,111 @@ def compute_relational_matrix(request):
             "F10": "f10_score", "F11": "f11_score", "F12": "f12_score"
         }
 
-        daily_scores = []
+        parsed_rows = []
         for page in daily_pages:
             props = page.get("properties", {})
-            record = {"date": get_date(props, "date")}
+            record = {
+                "date": get_date(props, "date"),
+                "data_state": get_select(props, "data_state"),
+                "wearable_absent": get_checkbox(props, "wearable_data_absent"),
+            }
             for f in fields:
-                val = get_number(props, field_keys[f])
-                record[f] = val
-            daily_scores.append(record)
+                record[f] = get_number(props, field_keys[f])
+            parsed_rows.append(record)
 
-        # Sort by date
-        daily_scores.sort(key=lambda d: d.get("date", ""))
+        # Sort by date ascending
+        parsed_rows.sort(key=lambda d: d.get("date", ""))
+
+        # ──────────────────────────────────────────────────────────────
+        # DATA QUALITY FILTER
+        #
+        # Two distinct contaminants, both of which manufacture fake
+        # correlation structure:
+        #
+        #  1. no_sync days — the ingest pipeline carries the previous
+        #     day's scores forward when the wearable didn't sync. These
+        #     are not observations.
+        #  2. Carry-forward duplicates — rows byte-identical to their
+        #     predecessor across all 12 fields. Catches the same problem
+        #     on historical rows where data_state was never populated
+        #     (data_state only exists from 2026-08-01 onward), so the
+        #     no_sync filter alone is blind to them.
+        #
+        # Duplicate detection runs on the ORIGINAL sequence, before any
+        # rows are removed, so that dropping row N doesn't make rows
+        # N-1 and N+1 look like neighbours and mask a real repeat.
+        # ──────────────────────────────────────────────────────────────
+        def field_vector(row):
+            return tuple(row.get(f) for f in fields)
+
+        dropped_no_sync = 0
+        dropped_duplicate = 0
+        dropped_empty = 0
+        daily_scores = []
+
+        for i, row in enumerate(parsed_rows):
+            vec = field_vector(row)
+
+            # Rows with no field data at all carry no signal.
+            if all(v is None for v in vec):
+                dropped_empty += 1
+                continue
+
+            if RC_DROP_NO_SYNC and (
+                row.get("data_state") == "no_sync" or row.get("wearable_absent")
+            ):
+                dropped_no_sync += 1
+                continue
+
+            if RC_DROP_DUPLICATES and i > 0:
+                if vec == field_vector(parsed_rows[i - 1]):
+                    dropped_duplicate += 1
+                    continue
+
+            daily_scores.append(row)
+
+        rows_received = len(parsed_rows)
+        rows_dropped = dropped_no_sync + dropped_duplicate + dropped_empty
+
+        # Trim to the analysis window (most recent N valid days).
+        if RC_WINDOW_DAYS > 0 and len(daily_scores) > RC_WINDOW_DAYS:
+            daily_scores = daily_scores[-RC_WINDOW_DAYS:]
+
+        config_block = {
+            "rc_version": RC_VERSION,
+            "window_days": RC_WINDOW_DAYS,
+            "min_days": RC_MIN_DAYS,
+            "min_pair_points": RC_MIN_PAIR_POINTS,
+            "rows_received": rows_received,
+            "rows_used": len(daily_scores),
+            "rows_dropped": rows_dropped,
+            "dropped_no_sync": dropped_no_sync,
+            "dropped_duplicate": dropped_duplicate,
+            "dropped_empty": dropped_empty,
+        }
+
+        # Floor is checked AFTER filtering — the old code checked the raw
+        # page count, so a window of 60 rows that was 53% duplicates passed
+        # a "20 day" gate while carrying ~28 real observations.
+        if len(daily_scores) < RC_MIN_DAYS:
+            return (json.dumps({
+                "error": "Insufficient data",
+                "message": (
+                    f"Need at least {RC_MIN_DAYS} valid days, "
+                    f"have {len(daily_scores)} after dropping {rows_dropped} "
+                    f"of {rows_received} rows"
+                ),
+                "relational_coherence_score": None,
+                "validation_status": "insufficient_data",
+                "config": config_block
+            }), 200, headers)
 
         # ── PARSE NOTION EXPECTED PAIRS ──
         pair_pages = notion_pairs.get("results", [])
         expected_pairs = []
         for page in pair_pages:
             props = page.get("properties", {})
+            dw_raw = get_number(props, "diagnostic_weight")
             pair = {
                 "pair_id": get_text(props, "pair_id"),
                 "field_a": get_select(props, "field_a"),
@@ -112,7 +226,10 @@ def compute_relational_matrix(request):
                 "lag_days": get_number(props, "lag_days") or 0,
                 "gate_field": get_select(props, "gate_field") or "None",
                 "gate_threshold": get_number(props, "gate_threshold") or 0,
-                "diagnostic_weight": get_number(props, "diagnostic_weight") or 0.10,
+                # Default is 1.0, not 0.10. A missing weight must not silently
+                # mute a pair to a tenth of its neighbours.
+                "diagnostic_weight": dw_raw if dw_raw is not None else 1.0,
+                "weight_was_missing": dw_raw is None,
                 "layer_scope": get_select(props, "layer_scope") or "Cross-layer"
             }
             if pair["pair_id"]:
@@ -121,7 +238,8 @@ def compute_relational_matrix(request):
         if not expected_pairs:
             return (json.dumps({
                 "error": "No expected pairs found",
-                "message": "Expected Covariance Table returned 0 records"
+                "message": "Expected Covariance Table returned 0 records",
+                "config": config_block
             }), 200, headers)
 
         # ── STEP 1: Build field time series ──
@@ -132,6 +250,9 @@ def compute_relational_matrix(request):
             raw_series[f] = [d.get(f) for d in daily_scores]
 
         # ── STEP 2: Z-score normalize ──
+        # Note: Pearson r is invariant under linear rescaling, so this has no
+        # effect on the correlations. Retained because raw_series is used for
+        # gate thresholds and keeping the two parallel avoids confusion.
         z_series = {}
         for f in fields:
             values = [v for v in series[f] if v is not None]
@@ -157,7 +278,7 @@ def compute_relational_matrix(request):
         def pearson_r(xs, ys):
             pairs = [(x, y) for x, y in zip(xs, ys) if x is not None and y is not None]
             n = len(pairs)
-            if n < 15:
+            if n < RC_MIN_PAIR_POINTS:
                 return None, n
             mean_x = sum(p[0] for p in pairs) / n
             mean_y = sum(p[1] for p in pairs) / n
@@ -185,7 +306,9 @@ def compute_relational_matrix(request):
             return fa, fb
 
         matrix = {}
-        all_weighted_deviations = []
+        weighted_dev_sum = 0.0
+        weight_sum = 0.0
+        weights_missing = 0
         layer_deviations = {
             "Structure": [], "Electricity": [], "Energy": [],
             "Regulation": [], "Cross-layer": []
@@ -201,6 +324,8 @@ def compute_relational_matrix(request):
             gf = pair["gate_field"]
             gt = float(pair["gate_threshold"])
             dw = float(pair["diagnostic_weight"])
+            if pair["weight_was_missing"]:
+                weights_missing += 1
 
             sa = list(z_series.get(fa, []))
             sb = list(z_series.get(fb, []))
@@ -224,11 +349,27 @@ def compute_relational_matrix(request):
                 sa, sb = apply_gate(sa, sb, gr, gt)
 
             r, n = pearson_r(sa, sb)
-            sufficient = r is not None and n >= 20
+            sufficient = r is not None and n >= RC_SUFFICIENT_POINTS
 
             if r is not None:
                 deviation = abs(exp_r - r)
-                w_dev = deviation * abs(exp_r) if exp_r != 0 else deviation * dw
+
+                # ──────────────────────────────────────────────────────
+                # WEIGHTING — single scheme for every pair.
+                #
+                # Was: `deviation * abs(exp_r)` for pairs with a non-zero
+                # expected_r, and `deviation * dw` (default 0.10) for
+                # Independent pairs. Two incompatible schemes: a violated
+                # Independent pair — arguably the most diagnostically
+                # interesting event in the matrix — was weighted ~7x lower
+                # than a Synergistic one and vanished from RC.
+                #
+                # Now: diagnostic_weight governs all pairs, which is what
+                # the field is named for.
+                # ──────────────────────────────────────────────────────
+                w_dev = deviation * dw
+                weighted_dev_sum += w_dev
+                weight_sum += dw
 
                 prev = previous_matrix.get(pid, {})
                 prev_r = prev.get("actual_r")
@@ -243,7 +384,6 @@ def compute_relational_matrix(request):
                 else:
                     direction = "new"
 
-                all_weighted_deviations.append(w_dev)
                 la = field_layer.get(fa, "")
                 lb = field_layer.get(fb, "")
                 bucket = la if la == lb else "Cross-layer"
@@ -262,11 +402,26 @@ def compute_relational_matrix(request):
                 "sufficient_data": sufficient, "relationship_type": rel
             }
 
-        # ── STEP 4: RC Score ──
-        if all_weighted_deviations:
-            mean_wd = sum(all_weighted_deviations) / len(all_weighted_deviations)
-            rc = max(0, min(100, round(100 - (mean_wd * 100 / 1.80), 1)))
+        # ──────────────────────────────────────────────────────────────
+        # STEP 4: RC Score
+        #
+        # Was: rc = 100 - (mean_wd * 100 / 1.80), where mean_wd was a
+        # WEIGHTED deviation averaged over the pair COUNT, divided by a
+        # constant on the UNWEIGHTED 0..2 scale. Numerator and denominator
+        # were in different units, shrinking every RC by roughly the mean
+        # weight (~0.36 in practice) and confining the metric to ~88-100.
+        #
+        # Now: divide the weighted deviation sum by the weight sum, giving
+        # a true weighted-mean deviation on the same 0..2 scale as the
+        # denominator. RC becomes interpretable across its full range.
+        # ──────────────────────────────────────────────────────────────
+        if weight_sum > 0:
+            weighted_mean_dev = weighted_dev_sum / weight_sum
+            rc = max(0, min(100, round(
+                100 - (weighted_mean_dev * 100 / RC_DEVIATION_MAX), 1
+            )))
         else:
+            weighted_mean_dev = None
             rc = None
 
         # ── STEP 5: Top deviations ──
@@ -292,25 +447,49 @@ def compute_relational_matrix(request):
         computed = sum(1 for v in matrix.values() if v["sufficient_data"])
         insufficient = sum(1 for v in matrix.values() if not v["sufficient_data"])
 
+        # A run is only "valid" if the window is long enough for the
+        # correlations to mean anything. Short windows are permitted for
+        # pipeline testing but are labelled so downstream consumers
+        # (S10 archetype, S7 brief) can refuse to narrate them.
+        validation_status = "valid" if RC_WINDOW_DAYS >= 21 else "test_mode"
+
+        config_block["weights_missing"] = weights_missing
+        config_block["mean_weight"] = (
+            round(weight_sum / computed, 4) if computed else None
+        )
+
         result = {
             "relational_coherence_score": rc,
+            "rc_version": RC_VERSION,
+            "validation_status": validation_status,
+            "weighted_mean_deviation": (
+                round(weighted_mean_dev, 4) if weighted_mean_dev is not None else None
+            ),
             "pairs_computed": computed,
             "pairs_insufficient": insufficient,
             "days_analyzed": len(daily_scores),
+            "config": config_block,
             "top_deviations": top_devs,
             "layer_summaries": layer_summaries,
             "matrix": matrix
         }
 
+        # Kept compact — Notion rich_text caps at 2000 chars.
         summary = {
             "relational_coherence_score": rc,
+            "rc_version": RC_VERSION,
+            "validation_status": validation_status,
             "pairs_computed": computed,
             "pairs_insufficient": insufficient,
             "days_analyzed": len(daily_scores),
+            "rows_dropped": rows_dropped,
+            "window_days": RC_WINDOW_DAYS,
             "top_deviations": top_devs[:3],
             "layer_summaries": layer_summaries
         }
-        result["matrix_json_string"] = json.dumps(summary, separators=(',',':')).replace('"', '\\"')
+        result["matrix_json_string"] = json.dumps(
+            summary, separators=(',', ':')
+        ).replace('"', '\\"')
 
         return (json.dumps(result), 200, headers)
 
