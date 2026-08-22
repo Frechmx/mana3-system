@@ -22,7 +22,7 @@ RC_SUFFICIENT_POINTS = int(os.environ.get("RC_SUFFICIENT_POINTS", "20"))
 RC_VALID_MIN_ROWS    = int(os.environ.get("RC_VALID_MIN_ROWS", "21"))
 RC_DROP_NO_SYNC      = os.environ.get("RC_DROP_NO_SYNC", "true").lower() == "true"
 RC_DROP_DUPLICATES   = os.environ.get("RC_DROP_DUPLICATES", "true").lower() == "true"
-RC_VERSION           = 2
+RC_VERSION           = 3
 
 # Deviation is |expected_r - actual_r|, which ranges 0..2.
 # RC maps that range onto 0..100. Denominator MUST match the scale of the
