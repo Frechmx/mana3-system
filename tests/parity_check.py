@@ -1,24 +1,27 @@
-"""Parity proof: loader's day selection is identical to relational v3's.
+"""Parity proof for the ported relational service.
 
-Rebuilds a Notion payload from the Window the loader produced and feeds it
-to the unmodified v3 function. v3's own filters are no-ops on already-clean
-rows, so the only thing under test is whether the loader chose the same
-days with the same values. Byte-identical output against rc_expected.json
-means the port changed nothing.
+Runs the live Cloud Run entry point end to end against the v3 golden, in
+legacy loader configuration. Zero diffs is the pass condition — unlike the
+step-1 harness, this compares every key including the compatibility config
+block and matrix_json_string.
+
+    LOADER_ZERO_AS_NULL=false LOADER_NEAR_DUP_MIN_FIELDS=0 \
+      python tests/parity_check.py
 """
 import json
 import os
 import sys
 
-sys.path.insert(0, ".")
-sys.path.insert(0, "stub")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from longitudinal.loader import FIELD_PROPERTY, FIELDS, load_from_notion_payload
 import importlib.util
 _spec = importlib.util.spec_from_file_location(
-    "rc_v3", os.path.join(os.path.dirname(__file__), "..", "relational", "main.py"))
-rc_v3 = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rc_v3)
+    "relational_main",
+    os.path.join(os.path.dirname(__file__), "..", "relational", "main.py"))
+relational_main = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(relational_main)
+
+FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 
 class Req:
@@ -27,24 +30,8 @@ class Req:
     def __init__(self, p):
         self._p = p
 
-    def get_json(self):
+    def get_json(self, silent=False):
         return self._p
-
-
-def day_to_page(day):
-    props = {
-        "date": {"type": "date", "date": {"start": day.date}},
-        "data_state": {
-            "type": "select",
-            "select": {"name": day.data_state} if day.data_state else None,
-        },
-        "wearable_data_absent": {
-            "type": "checkbox", "checkbox": day.wearable_absent
-        },
-    }
-    for f in FIELDS:
-        props[FIELD_PROPERTY[f]] = {"type": "number", "number": day.get(f)}
-    return {"properties": props}
 
 
 def diff(a, b, path=""):
@@ -52,9 +39,9 @@ def diff(a, b, path=""):
     if isinstance(a, dict) and isinstance(b, dict):
         for k in sorted(set(a) | set(b)):
             if k not in a:
-                out.append((path + "/" + k, "<missing>", b[k]))
+                out.append((path + "/" + k, "<missing in got>", b[k]))
             elif k not in b:
-                out.append((path + "/" + k, a[k], "<missing>"))
+                out.append((path + "/" + k, a[k], "<missing in expected>"))
             else:
                 out += diff(a[k], b[k], path + "/" + k)
     elif isinstance(a, list) and isinstance(b, list):
@@ -68,23 +55,27 @@ def diff(a, b, path=""):
     return out
 
 
-payload = json.load(open("tests/fixtures/rc_payload.json"))
-expected = json.load(open("tests/fixtures/rc_expected.json"))
+payload = json.load(open(os.path.join(FIXTURES, "rc_payload.json")))
+expected = json.load(open(os.path.join(FIXTURES, "rc_expected.json")))
 
-win, pairs = load_from_notion_payload(payload)
-
-rebuilt = {
-    "notion_daily": {"results": [day_to_page(d) for d in win.days]},
-    "notion_pairs": payload["notion_pairs"],
-    "previous_matrix": payload.get("previous_matrix", {}),
-}
-
-body, status, _ = rc_v3.compute_relational_matrix(Req(rebuilt))
+body, status, _ = relational_main.compute_relational_matrix(Req(payload))
 got = json.loads(body)
 
+if os.environ.get("LOADER_ZERO_AS_NULL") != "false":
+    print("WARNING: not running in legacy mode; diffs below are expected.\n")
+
+window = got.pop("window", None)
 d = diff(got, expected)
+
 print("status:", status)
-print("loader n_eligible:", win.n_eligible)
+print("days analyzed:", got.get("days_analyzed"))
+print("pairs computed:", got.get("pairs_computed"))
 print("DIFFS vs rc_expected.json:", len(d))
 for p, g, e in d[:20]:
-    print("  ", p, "| got:", g, "| exp:", e)
+    print("  ", p, "| got:", str(g)[:60], "| exp:", str(e)[:60])
+
+if window:
+    print("\nwindow:", window["window_start"], "->", window["window_end"],
+          "| regime:", window["regime"],
+          "| eligible:", window["n_eligible"],
+          "| excluded:", window["excluded_counts"])
