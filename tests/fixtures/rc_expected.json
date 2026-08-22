@@ -1,0 +1,821 @@
+{
+  "relational_coherence_score": 80.3,
+  "rc_version": 3,
+  "validation_status": "valid",
+  "weighted_mean_deviation": 0.3946,
+  "pairs_computed": 59,
+  "pairs_insufficient": 7,
+  "days_analyzed": 23,
+  "config": {
+    "rc_version": 3,
+    "window_days": 60,
+    "window_start": "2026-02-13",
+    "window_end": "2026-04-13",
+    "span_days": 28,
+    "coverage_pct": 82.1,
+    "min_days": 20,
+    "min_pair_points": 15,
+    "rows_received": 27,
+    "rows_used": 23,
+    "rows_dropped": 4,
+    "dropped_no_sync": 0,
+    "dropped_duplicate": 0,
+    "dropped_empty": 4,
+    "dropped_out_of_window": 0,
+    "weights_missing": 0,
+    "mean_weight": 0.2381
+  },
+  "top_deviations": [
+    {
+      "pair_id": "F4_F5",
+      "deviation": 1.1271,
+      "actual_r": -0.5271,
+      "expected_r": 0.6,
+      "relationship_type": "Synergistic",
+      "deviation_direction": "new"
+    },
+    {
+      "pair_id": "F10_F11",
+      "deviation": 0.7949,
+      "actual_r": -0.0449,
+      "expected_r": 0.75,
+      "relationship_type": "Synergistic",
+      "deviation_direction": "new"
+    },
+    {
+      "pair_id": "F4_F12",
+      "deviation": 0.7422,
+      "actual_r": 0.7422,
+      "expected_r": 0.0,
+      "relationship_type": "Independent",
+      "deviation_direction": "new"
+    },
+    {
+      "pair_id": "F4_F10",
+      "deviation": 0.7244,
+      "actual_r": 0.0756,
+      "expected_r": 0.8,
+      "relationship_type": "Synergistic",
+      "deviation_direction": "new"
+    },
+    {
+      "pair_id": "F3_F7",
+      "deviation": 0.7147,
+      "actual_r": 0.7147,
+      "expected_r": 0.0,
+      "relationship_type": "Independent",
+      "deviation_direction": "new"
+    }
+  ],
+  "layer_summaries": {
+    "Structure": {
+      "mean_deviation": 0.3819,
+      "pairs_computed": 3
+    },
+    "Electricity": {
+      "mean_deviation": 0.6425,
+      "pairs_computed": 3
+    },
+    "Energy": {
+      "mean_deviation": 0.1007,
+      "pairs_computed": 1
+    },
+    "Regulation": {
+      "mean_deviation": 0.4336,
+      "pairs_computed": 2
+    },
+    "Cross-layer": {
+      "mean_deviation": 0.323,
+      "pairs_computed": 52
+    }
+  },
+  "matrix": {
+    "F11_F12": {
+      "pair_id": "F11_F12",
+      "expected_r": 0.65,
+      "actual_r": 0.5778,
+      "deviation": 0.0722,
+      "weighted_deviation": 0.047,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F10_F12": {
+      "pair_id": "F10_F12",
+      "expected_r": 0.6,
+      "actual_r": null,
+      "deviation": null,
+      "weighted_deviation": null,
+      "deviation_direction": "insufficient_data",
+      "data_points": 2,
+      "sufficient_data": false,
+      "relationship_type": "Lagged"
+    },
+    "F10_F11": {
+      "pair_id": "F10_F11",
+      "expected_r": 0.75,
+      "actual_r": -0.0449,
+      "deviation": 0.7949,
+      "weighted_deviation": 0.5962,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F9_F12": {
+      "pair_id": "F9_F12",
+      "expected_r": 0.0,
+      "actual_r": 0.0392,
+      "deviation": 0.0392,
+      "weighted_deviation": 0.0039,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F9_F11": {
+      "pair_id": "F9_F11",
+      "expected_r": 0.0,
+      "actual_r": -0.4498,
+      "deviation": 0.4498,
+      "weighted_deviation": 0.045,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F9_F10": {
+      "pair_id": "F9_F10",
+      "expected_r": 0.6,
+      "actual_r": 0.6069,
+      "deviation": 0.0069,
+      "weighted_deviation": 0.0041,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F8_F12": {
+      "pair_id": "F8_F12",
+      "expected_r": 0.0,
+      "actual_r": -0.5,
+      "deviation": 0.5,
+      "weighted_deviation": 0.05,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F8_F11": {
+      "pair_id": "F8_F11",
+      "expected_r": -0.4,
+      "actual_r": -0.6274,
+      "deviation": 0.2274,
+      "weighted_deviation": 0.1023,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Regulatory"
+    },
+    "F8_F10": {
+      "pair_id": "F8_F10",
+      "expected_r": 0.0,
+      "actual_r": 0.3425,
+      "deviation": 0.3425,
+      "weighted_deviation": 0.0514,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F8_F9": {
+      "pair_id": "F8_F9",
+      "expected_r": 0.7,
+      "actual_r": 0.5993,
+      "deviation": 0.1007,
+      "weighted_deviation": 0.0705,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F7_F12": {
+      "pair_id": "F7_F12",
+      "expected_r": 0.0,
+      "actual_r": -0.2345,
+      "deviation": 0.2345,
+      "weighted_deviation": 0.0234,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F7_F11": {
+      "pair_id": "F7_F11",
+      "expected_r": 0.0,
+      "actual_r": -0.0512,
+      "deviation": 0.0512,
+      "weighted_deviation": 0.0051,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F7_F10": {
+      "pair_id": "F7_F10",
+      "expected_r": 0.0,
+      "actual_r": -0.0792,
+      "deviation": 0.0792,
+      "weighted_deviation": 0.0079,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F7_F9": {
+      "pair_id": "F7_F9",
+      "expected_r": 0.55,
+      "actual_r": null,
+      "deviation": null,
+      "weighted_deviation": null,
+      "deviation_direction": "insufficient_data",
+      "data_points": 6,
+      "sufficient_data": false,
+      "relationship_type": "Gated"
+    },
+    "F7_F8": {
+      "pair_id": "F7_F8",
+      "expected_r": 0.65,
+      "actual_r": null,
+      "deviation": null,
+      "weighted_deviation": null,
+      "deviation_direction": "insufficient_data",
+      "data_points": 9,
+      "sufficient_data": false,
+      "relationship_type": "Lagged"
+    },
+    "F6_F12": {
+      "pair_id": "F6_F12",
+      "expected_r": 0.55,
+      "actual_r": 0.0171,
+      "deviation": 0.5329,
+      "weighted_deviation": 0.2931,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F6_F11": {
+      "pair_id": "F6_F11",
+      "expected_r": 0.0,
+      "actual_r": 0.1566,
+      "deviation": 0.1566,
+      "weighted_deviation": 0.0157,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F6_F10": {
+      "pair_id": "F6_F10",
+      "expected_r": 0.0,
+      "actual_r": -0.3192,
+      "deviation": 0.3192,
+      "weighted_deviation": 0.0319,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F6_F9": {
+      "pair_id": "F6_F9",
+      "expected_r": 0.0,
+      "actual_r": -0.398,
+      "deviation": 0.398,
+      "weighted_deviation": 0.0398,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F6_F8": {
+      "pair_id": "F6_F8",
+      "expected_r": 0.0,
+      "actual_r": -0.1422,
+      "deviation": 0.1422,
+      "weighted_deviation": 0.0142,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F6_F7": {
+      "pair_id": "F6_F7",
+      "expected_r": 0.0,
+      "actual_r": 0.4077,
+      "deviation": 0.4077,
+      "weighted_deviation": 0.0408,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F12": {
+      "pair_id": "F5_F12",
+      "expected_r": 0.0,
+      "actual_r": -0.3351,
+      "deviation": 0.3351,
+      "weighted_deviation": 0.0335,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F11": {
+      "pair_id": "F5_F11",
+      "expected_r": 0.0,
+      "actual_r": -0.2633,
+      "deviation": 0.2633,
+      "weighted_deviation": 0.0263,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F10": {
+      "pair_id": "F5_F10",
+      "expected_r": 0.0,
+      "actual_r": 0.1199,
+      "deviation": 0.1199,
+      "weighted_deviation": 0.018,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F9": {
+      "pair_id": "F5_F9",
+      "expected_r": 0.0,
+      "actual_r": 0.464,
+      "deviation": 0.464,
+      "weighted_deviation": 0.0464,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F8": {
+      "pair_id": "F5_F8",
+      "expected_r": 0.0,
+      "actual_r": 0.6638,
+      "deviation": 0.6638,
+      "weighted_deviation": 0.0664,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F7": {
+      "pair_id": "F5_F7",
+      "expected_r": 0.0,
+      "actual_r": 0.4764,
+      "deviation": 0.4764,
+      "weighted_deviation": 0.0476,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F5_F6": {
+      "pair_id": "F5_F6",
+      "expected_r": 0.5,
+      "actual_r": 0.1659,
+      "deviation": 0.3341,
+      "weighted_deviation": 0.1671,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F4_F12": {
+      "pair_id": "F4_F12",
+      "expected_r": 0.0,
+      "actual_r": 0.7422,
+      "deviation": 0.7422,
+      "weighted_deviation": 0.0742,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F4_F11": {
+      "pair_id": "F4_F11",
+      "expected_r": 0.0,
+      "actual_r": 0.6643,
+      "deviation": 0.6643,
+      "weighted_deviation": 0.0996,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F4_F10": {
+      "pair_id": "F4_F10",
+      "expected_r": 0.8,
+      "actual_r": 0.0756,
+      "deviation": 0.7244,
+      "weighted_deviation": 0.652,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F4_F9": {
+      "pair_id": "F4_F9",
+      "expected_r": 0.0,
+      "actual_r": -0.4988,
+      "deviation": 0.4988,
+      "weighted_deviation": 0.0499,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F4_F8": {
+      "pair_id": "F4_F8",
+      "expected_r": 0.55,
+      "actual_r": null,
+      "deviation": null,
+      "weighted_deviation": null,
+      "deviation_direction": "insufficient_data",
+      "data_points": 9,
+      "sufficient_data": false,
+      "relationship_type": "Lagged"
+    },
+    "F4_F7": {
+      "pair_id": "F4_F7",
+      "expected_r": 0.5,
+      "actual_r": -0.1404,
+      "deviation": 0.6404,
+      "weighted_deviation": 0.3202,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F4_F6": {
+      "pair_id": "F4_F6",
+      "expected_r": 0.55,
+      "actual_r": 0.0836,
+      "deviation": 0.4664,
+      "weighted_deviation": 0.2565,
+      "deviation_direction": "new",
+      "data_points": 16,
+      "sufficient_data": false,
+      "relationship_type": "Lagged"
+    },
+    "F4_F5": {
+      "pair_id": "F4_F5",
+      "expected_r": 0.6,
+      "actual_r": -0.5271,
+      "deviation": 1.1271,
+      "weighted_deviation": 0.6763,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F3_F12": {
+      "pair_id": "F3_F12",
+      "expected_r": 0.0,
+      "actual_r": -0.1155,
+      "deviation": 0.1155,
+      "weighted_deviation": 0.0116,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F11": {
+      "pair_id": "F3_F11",
+      "expected_r": 0.0,
+      "actual_r": -0.1124,
+      "deviation": 0.1124,
+      "weighted_deviation": 0.0112,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F10": {
+      "pair_id": "F3_F10",
+      "expected_r": 0.0,
+      "actual_r": 0.1356,
+      "deviation": 0.1356,
+      "weighted_deviation": 0.0136,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F9": {
+      "pair_id": "F3_F9",
+      "expected_r": 0.0,
+      "actual_r": 0.2087,
+      "deviation": 0.2087,
+      "weighted_deviation": 0.0209,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F8": {
+      "pair_id": "F3_F8",
+      "expected_r": 0.0,
+      "actual_r": 0.3756,
+      "deviation": 0.3756,
+      "weighted_deviation": 0.0376,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F7": {
+      "pair_id": "F3_F7",
+      "expected_r": 0.0,
+      "actual_r": 0.7147,
+      "deviation": 0.7147,
+      "weighted_deviation": 0.0715,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F6": {
+      "pair_id": "F3_F6",
+      "expected_r": 0.0,
+      "actual_r": 0.413,
+      "deviation": 0.413,
+      "weighted_deviation": 0.0413,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F5": {
+      "pair_id": "F3_F5",
+      "expected_r": 0.0,
+      "actual_r": 0.4494,
+      "deviation": 0.4494,
+      "weighted_deviation": 0.0449,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F3_F4": {
+      "pair_id": "F3_F4",
+      "expected_r": 0.0,
+      "actual_r": -0.2246,
+      "deviation": 0.2246,
+      "weighted_deviation": 0.0225,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F12": {
+      "pair_id": "F2_F12",
+      "expected_r": 0.0,
+      "actual_r": 0.015,
+      "deviation": 0.015,
+      "weighted_deviation": 0.0015,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F11": {
+      "pair_id": "F2_F11",
+      "expected_r": 0.5,
+      "actual_r": null,
+      "deviation": null,
+      "weighted_deviation": null,
+      "deviation_direction": "insufficient_data",
+      "data_points": 3,
+      "sufficient_data": false,
+      "relationship_type": "Gated"
+    },
+    "F2_F10": {
+      "pair_id": "F2_F10",
+      "expected_r": 0.0,
+      "actual_r": -0.3524,
+      "deviation": 0.3524,
+      "weighted_deviation": 0.0352,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F9": {
+      "pair_id": "F2_F9",
+      "expected_r": 0.0,
+      "actual_r": -0.1881,
+      "deviation": 0.1881,
+      "weighted_deviation": 0.0188,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F8": {
+      "pair_id": "F2_F8",
+      "expected_r": 0.0,
+      "actual_r": -0.4044,
+      "deviation": 0.4044,
+      "weighted_deviation": 0.0404,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F7": {
+      "pair_id": "F2_F7",
+      "expected_r": 0.0,
+      "actual_r": 0.2221,
+      "deviation": 0.2221,
+      "weighted_deviation": 0.0222,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F6": {
+      "pair_id": "F2_F6",
+      "expected_r": 0.0,
+      "actual_r": 0.6195,
+      "deviation": 0.6195,
+      "weighted_deviation": 0.0619,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F5": {
+      "pair_id": "F2_F5",
+      "expected_r": 0.0,
+      "actual_r": -0.0683,
+      "deviation": 0.0683,
+      "weighted_deviation": 0.0068,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F4": {
+      "pair_id": "F2_F4",
+      "expected_r": 0.0,
+      "actual_r": 0.0136,
+      "deviation": 0.0136,
+      "weighted_deviation": 0.0014,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F2_F3": {
+      "pair_id": "F2_F3",
+      "expected_r": 0.75,
+      "actual_r": 0.1317,
+      "deviation": 0.6183,
+      "weighted_deviation": 0.4637,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F1_F12": {
+      "pair_id": "F1_F12",
+      "expected_r": 0.0,
+      "actual_r": -0.0708,
+      "deviation": 0.0708,
+      "weighted_deviation": 0.0071,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F11": {
+      "pair_id": "F1_F11",
+      "expected_r": 0.0,
+      "actual_r": 0.18,
+      "deviation": 0.18,
+      "weighted_deviation": 0.018,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F10": {
+      "pair_id": "F1_F10",
+      "expected_r": 0.45,
+      "actual_r": 0.373,
+      "deviation": 0.077,
+      "weighted_deviation": 0.0346,
+      "deviation_direction": "new",
+      "data_points": 16,
+      "sufficient_data": false,
+      "relationship_type": "Lagged"
+    },
+    "F1_F9": {
+      "pair_id": "F1_F9",
+      "expected_r": 0.0,
+      "actual_r": -0.5827,
+      "deviation": 0.5827,
+      "weighted_deviation": 0.0583,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F8": {
+      "pair_id": "F1_F8",
+      "expected_r": 0.0,
+      "actual_r": -0.4942,
+      "deviation": 0.4942,
+      "weighted_deviation": 0.0494,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F7": {
+      "pair_id": "F1_F7",
+      "expected_r": 0.0,
+      "actual_r": 0.3704,
+      "deviation": 0.3704,
+      "weighted_deviation": 0.037,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F6": {
+      "pair_id": "F1_F6",
+      "expected_r": 0.0,
+      "actual_r": 0.622,
+      "deviation": 0.622,
+      "weighted_deviation": 0.0622,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F5": {
+      "pair_id": "F1_F5",
+      "expected_r": 0.0,
+      "actual_r": -0.1403,
+      "deviation": 0.1403,
+      "weighted_deviation": 0.014,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F4": {
+      "pair_id": "F1_F4",
+      "expected_r": 0.0,
+      "actual_r": 0.1481,
+      "deviation": 0.1481,
+      "weighted_deviation": 0.0148,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Independent"
+    },
+    "F1_F3": {
+      "pair_id": "F1_F3",
+      "expected_r": 0.65,
+      "actual_r": 0.1589,
+      "deviation": 0.4911,
+      "weighted_deviation": 0.3192,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    },
+    "F1_F2": {
+      "pair_id": "F1_F2",
+      "expected_r": 0.7,
+      "actual_r": 0.6637,
+      "deviation": 0.0363,
+      "weighted_deviation": 0.0254,
+      "deviation_direction": "new",
+      "data_points": 23,
+      "sufficient_data": true,
+      "relationship_type": "Synergistic"
+    }
+  },
+  "matrix_json_string": "{\\\"relational_coherence_score\\\":80.3,\\\"rc_version\\\":3,\\\"validation_status\\\":\\\"valid\\\",\\\"pairs_computed\\\":59,\\\"pairs_insufficient\\\":7,\\\"days_analyzed\\\":23,\\\"rows_dropped\\\":4,\\\"window_days\\\":60,\\\"window_start\\\":\\\"2026-02-13\\\",\\\"window_end\\\":\\\"2026-04-13\\\",\\\"span_days\\\":28,\\\"top_deviations\\\":[{\\\"pair_id\\\":\\\"F4_F5\\\",\\\"deviation\\\":1.1271,\\\"actual_r\\\":-0.5271,\\\"expected_r\\\":0.6,\\\"relationship_type\\\":\\\"Synergistic\\\",\\\"deviation_direction\\\":\\\"new\\\"},{\\\"pair_id\\\":\\\"F10_F11\\\",\\\"deviation\\\":0.7949,\\\"actual_r\\\":-0.0449,\\\"expected_r\\\":0.75,\\\"relationship_type\\\":\\\"Synergistic\\\",\\\"deviation_direction\\\":\\\"new\\\"},{\\\"pair_id\\\":\\\"F4_F12\\\",\\\"deviation\\\":0.7422,\\\"actual_r\\\":0.7422,\\\"expected_r\\\":0.0,\\\"relationship_type\\\":\\\"Independent\\\",\\\"deviation_direction\\\":\\\"new\\\"}],\\\"layer_summaries\\\":{\\\"Structure\\\":{\\\"mean_deviation\\\":0.3819,\\\"pairs_computed\\\":3},\\\"Electricity\\\":{\\\"mean_deviation\\\":0.6425,\\\"pairs_computed\\\":3},\\\"Energy\\\":{\\\"mean_deviation\\\":0.1007,\\\"pairs_computed\\\":1},\\\"Regulation\\\":{\\\"mean_deviation\\\":0.4336,\\\"pairs_computed\\\":2},\\\"Cross-layer\\\":{\\\"mean_deviation\\\":0.323,\\\"pairs_computed\\\":52}}}"
+}
